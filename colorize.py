@@ -15,15 +15,15 @@ def bwImage(image):
     # writing greyscale image to project directory
     io.imsave("GreyScaleImage.jfif",greyValues)
 
-# runs k means on the image, (num means is the # of means to use)
+# runs k means on the image, (num means is the # of means to use) for 6 nearest neighbors
     # for the basic writeup, numMeans will be 5
     # for the bonus, we will have to find a good numMeans
 def knn(colorImage, blackWhiteImage,numMeans):
     # first running k-means on the left half of color picture to get representative colors
-    colorImagePixels = io.imread(colorImage)
-    shapes = numpy.shape(colorImagePixels)
+    EntireColorImagePixels = io.imread(colorImage)
+    shapes = numpy.shape(EntireColorImagePixels)
     # cropping matrix to only the left half
-    colorImagePixels = colorImagePixels[:shapes[0],:shapes[1]/2,:]
+    colorImagePixels = EntireColorImagePixels[:shapes[0],:shapes[1]/2,:]
         # picking numMeans number of initial means from the left hand side of colorImage
     # picking length,width of pixel
         # pixel is a tuple of rgb
@@ -122,27 +122,117 @@ def knn(colorImage, blackWhiteImage,numMeans):
         # and representative color
     trainingShape = numpy.shape(blackWhiteTraining)
     testShape = numpy.shape(blackWhiteTest)
-    # training data holds data in the form of ((v_1,v_2,...,v_9) , (r,g,b))
-        # where the first element are the grey values of every square in the patch
-        # the second element is the rgb color associated with the middle pixel from k-means
-    trainingData = numpy.array([])
-    for i in range(trainingShape[0]):
-        # need to see if surrounding squares are valid
-        # if not, then this cannot be a middle square for a 3x3 patch
-        if i + 1 >= trainingShape[0]:
-            # invalid patch
-            continue
-        if i - 1 < 0:
-            # invalid patch
-            continue
-        for j in range(trainingShape[1]):
-            if j+1>= trainingShape[1]:
-                # invalid patch
+    # UNSURE ABOUT HOW TO GET ONLY RIGHT HALF OF COLOR IMAGE SIZE HERE
+        # RESULT DATA SHOULD BE 3 dimensional for r,g,b
+    resultData = numpy.array()
+    for i in range(testShape[0]):
+
+        for j in range(testShape[1]):
+            if i + 1 >= testShape[0]:
+                # invalid patch, we color this black
+                resultData[i,j,0]=0
+                resultData[i,j,1]=0
+                resultData[i,j,2]=0
                 continue
-            if j-1 <0 :
-                # invalid patch
+            if i - 1 < 0:
+                # invalid patch, we color this black
+                resultData[i, j, 0] = 0
+                resultData[i, j, 1] = 0
+                resultData[i, j, 2] = 0
                 continue
-            # if we reached here, we have a valid patch
+            if j+1>=testShape[1]:
+                # invalid patch, we color this black
+                resultData[i, j, 0] = 0
+                resultData[i, j, 1] = 0
+                resultData[i, j, 2] = 0
+                continue
+            if j-1<0:
+                # invalid patch, we color this black
+                resultData[i, j, 0] = 0
+                resultData[i, j, 1] = 0
+                resultData[i, j, 2] = 0
+                continue
+            # if we reached here, we have a valid 3x3 patch
+            # now we need to go to the training data and find the 6 closest 3x3 patches
+                # form of this is [(distanceValue, (rgb)) , ...]
+            sixClosest = numpy.array([])
+            for z in range(trainingShape[0]):
+                # need to see if surrounding squares are valid
+                # if not, then this cannot be a middle square for a 3x3 patch
+                if z + 1 >= trainingShape[0]:
+                    # invalid patch
+                    continue
+                if z - 1 < 0:
+                    # invalid patch
+                    continue
+                for y in range(trainingShape[1]):
+                    if y + 1 >= trainingShape[1]:
+                        # invalid patch
+                        continue
+                    if y - 1 < 0:
+                        # invalid patch
+                        continue
+                    # if we reached here, we have a valid patch
+                    # calculating the distance value between patches
+                    distance = (blackWhiteTraining[i+1,j+1] - blackWhiteTest[i+1,j+1])**2 \
+                               + (blackWhiteTraining[i+1,j]-blackWhiteTest[i+1,j]) **2 \
+                               + (blackWhiteTraining[i+1,j-1]-blackWhiteTest[i+1,j-1]) **2 \
+                               + (blackWhiteTraining[i,j+1]-blackWhiteTest[i,j+1]) **2 \
+                               + (blackWhiteTraining[i,j]-blackWhiteTest[i,j])**2 \
+                               + (blackWhiteTraining[i,j-1]-blackWhiteTest[i,j-1]) **2 \
+                               + (blackWhiteTraining[i-1,j+1]-blackWhiteTest[i-1,j+1]) **2 \
+                               + (blackWhiteTraining[i-1,j]-blackWhiteTest[i-1,j]) **2 \
+                               + (blackWhiteTraining[i-1,j-1]-blackWhiteTest[i-1,j-1]) **2
+                    rgb = colorImagePixels[z,y,0],colorImagePixels[z,y,1],colorImagePixels[z,y,2]
+
+                    # seeing if we can add this data to the list
+                    if (len(sixClosest)<6):
+                        # then we can just add it
+                        numpy.append(sixClosest,(distance,rgb))
+                    else:
+                        # then we have to replace this with the greatest value if it is larger
+                        largest = numpy.argmax(sixClosest)
+                        if sixClosest[largest][0]>distance:
+                            # then we can replace it
+                            numpy.delete(sixClosest,largest)
+                            numpy.append(sixClosest,(distance,rgb))
+            # now we have the six closest neighbors of this patch
+            # if there is a win in representative colors, we pick that color
+                # otherwise pick color with least distance
+            counter={}
+            for i in range(len(sixClosest)):
+                if (sixClosest[i][1] in counter):
+                    counter[sixClosest[i][1]] +=1
+                else:
+                    counter[sixClosest[i][1]]=0
+            allTie = True
+            numOccurence = counter[sixClosest[0][1]]
+            bestColor = None
+            for keys in counter:
+                if counter[keys] > numOccurence:
+                    allTie = False
+                    bestColor = keys
+            if allTie:
+                # we have to pick the lowest distance color
+                lowestDistance = sixClosest[0][0]
+                bestColor = sixClosest[0][1]
+                for i in range(len(sixClosest)):
+                    if sixClosest[i][0]<lowestDistance:
+                        lowestDistance= sixClosest[i][0]
+                        bestColor=sixClosest[i][1]
+            # we color this rgb
+            resultData[i,j,0]=bestColor[0]
+            resultData[i,j,1]=bestColor[1]
+            resultData[i,j,2]=bestColor[2]
+
+    # now resultData holds the recolored right half
+    # we combine coloredPixels and resultData and write the output
+
+
+
+
+
+
 
 
 
