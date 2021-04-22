@@ -4,7 +4,7 @@
 from random import randint
 
 from skimage import io
-import numpy
+import numpy as np
 # takes a colored image file as input, writes to this directory the black and white output
 def bwImage(image):
     #pixels is a np array with rgb "layers" i.e mxn pixels in 3 dimensions for rgb
@@ -15,18 +15,30 @@ def bwImage(image):
     # writing greyscale image to project directory
     io.imsave("GreyScaleImage.jfif",greyValues)
 
-# runs k means on the image, (num means is the # of means to use) for 6 nearest neighbors
+# runs k means on the image, then knn to recolor image
+# (num means is the # of means to use) for 6 nearest neighbors
     # for the basic writeup, numMeans will be 5
     # for the bonus, we will have to find a good numMeans
-def knn(colorImage, blackWhiteImage,numMeans):
+def knn(colorImage, blackWhiteImage, numMeans):
+    '''
+    Reading in/processing color image
+    '''
     # first running k-means on the left half of color picture to get representative colors
     EntireColorImagePixels = io.imread(colorImage)
-    shapes = numpy.shape(EntireColorImagePixels)
+
+    #In numpy "shape" refers to the whole tuple, so there's no plural "shapes" for a single array
+    #I think reading into "length, width" would be good to make it more clear that its the dimensions
+    shapes = numpy.shape(EntireColorImagePixels) 
+
     # cropping matrix to only the left half
     colorImagePixels = EntireColorImagePixels[:shapes[0],:shapes[1]/2,:]
         # picking numMeans number of initial means from the left hand side of colorImage
     # picking length,width of pixel
         # pixel is a tuple of rgb
+
+    '''
+    Cluster to find 5 representative colors -- I think this section could be in a helper method that returns an array of representative colors
+    '''
     meansChosen = 0
     means=numpy.array([])
     while (meansChosen!=numMeans):
@@ -91,7 +103,7 @@ def knn(colorImage, blackWhiteImage,numMeans):
         for i in range(len(means)):
             if set(means[i][1]) != set(oldMeans[i][1]):
                 changes=True
-                break;
+                break
 
         if not changes:
             # then we hit convergence
@@ -101,6 +113,10 @@ def knn(colorImage, blackWhiteImage,numMeans):
             break
         else:
             oldMeans=means
+
+    '''
+    Recolor left half of image
+    '''
     # now we have our k means representative colors, we can start to "recolor" our left half of the colored image
     for i in range(numpy.shape(colorImagePixels)[0]):
         for j in range(numpy.shape(colorImagePixels)[1]):
@@ -114,6 +130,10 @@ def knn(colorImage, blackWhiteImage,numMeans):
                     break
     # now the left half of the color image is "recolored"
 
+    '''
+    Read in and process black and white image
+    '''
+
     # getting greyscale values of the black and white image
     blackWhiteValues = io.imread(blackWhiteImage)
     # getting left hand side of image and right hand side of image
@@ -124,6 +144,11 @@ def knn(colorImage, blackWhiteImage,numMeans):
     testShape = numpy.shape(blackWhiteTest)
     # UNSURE ABOUT HOW TO GET ONLY RIGHT HALF OF COLOR IMAGE SIZE HERE
         # RESULT DATA SHOULD BE 3 dimensional for r,g,b
+
+    '''
+    Run knn with k=6 to get recolored right half
+    '''
+
     resultData = numpy.array()
     for i in range(testShape[0]):
 
@@ -230,18 +255,6 @@ def knn(colorImage, blackWhiteImage,numMeans):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 # trains a model
 def trainModel(image,model):
     pass
@@ -253,3 +266,8 @@ def improved(image,model):
 
 #test
 bwImage("colorImage.jfif")
+
+'''
+I think it would be more modular if the reading in images was done here, or in a main/test method, and then the methods above used the resulting numpy arrays
+Then the methods could return numpy arrays, and down here could save files or compare with the true right half to see how well it did.
+'''
