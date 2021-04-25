@@ -4,140 +4,136 @@
 from random import randint
 
 from skimage import io
-import numpy as np
-# takes a colored image file as input, writes to this directory the black and white output
-def bwImage(image):
-    #pixels is a np array with rgb "layers" i.e mxn pixels in 3 dimensions for rgb
-    pixels = io.imread(image)
+import numpy
+
+# converts numpy array to image with specified name
+def arrayToImage(array,imageName):
+    io.imsave(imageName,array)
+
+# converts image to numpyArray for manipulation
+def imageToArray(imageName):
+    return io.imread(imageName)
+
+# image is a numpy array of 3 dimensions representing a color image
+    # returns the numpy array representing a black and white image
+def bwImage(colorImage):
+    #colorImage is a np array with rgb "layers" i.e mxn pixels in 3 dimensions for rgb
     #greyscale function is replacing (r,g,b) with 0.21 r + 0.72 g + 0.07b
-    r,g,b = pixels[:,:,0], pixels[:,:,1], pixels[:,:,2]
+    r,g,b = colorImage[:,:,0], colorImage[:,:,1], colorImage[:,:,2]
     greyValues = (numpy.rint(numpy.add((0.21 * r),(0.72 * g),(0.07*b)))).astype(numpy.uint8)
-    # writing greyscale image to project directory
-    io.imsave("GreyScaleImage.jfif",greyValues)
+    # returning greyscale numpy array
+    return greyValues
 
-# runs k means on the image, then knn to recolor image
-# (num means is the # of means to use) for 6 nearest neighbors
-    # for the basic writeup, numMeans will be 5
-    # for the bonus, we will have to find a good numMeans
-def knn(colorImage, blackWhiteImage, numMeans):
-    '''
-    Reading in/processing color image
-    '''
-    # first running k-means on the left half of color picture to get representative colors
-    EntireColorImagePixels = io.imread(colorImage)
-
-    #In numpy "shape" refers to the whole tuple, so there's no plural "shapes" for a single array
-    #I think reading into "length, width" would be good to make it more clear that its the dimensions
-    shapes = numpy.shape(EntireColorImagePixels) 
-
-    # cropping matrix to only the left half
-    colorImagePixels = EntireColorImagePixels[:shapes[0],:shapes[1]/2,:]
-        # picking numMeans number of initial means from the left hand side of colorImage
-    # picking length,width of pixel
-        # pixel is a tuple of rgb
-
-    '''
-    Cluster to find 5 representative colors -- I think this section could be in a helper method that returns an array of representative colors
-    '''
+# general function that takes a numpy data array representing the entire color image
+    # runs numMeans-clustering on the image
+    # then recolors the image that was input as an argument
+    # returns the numpy array representing the recolored left half of the image
+def kmeans(colorImage,numMeans):
+    ogWidth,ogLength,ogDim= numpy.shape(colorImage)
+    colorLeftHalf = colorImage[:,:int(ogLength/2),:]
+    width,length,dim = numpy.shape(colorLeftHalf)
     meansChosen = 0
-    means=numpy.array([])
-    while (meansChosen!=numMeans):
-        randRow = randint(0, shapes[0] - 1)
-        randCol = randint(0, int(shapes[1] / 2) - 1)
-        meanChosen = colorImagePixels[randRow, randCol, 0], \
-                     colorImagePixels[randRow, randCol, 1], \
-                     colorImagePixels[randRow, randCol, 2]
+    means = numpy.array([])
+    while (meansChosen != numMeans):
+        randRow = randint(0, width-1)
+        randCol = randint(0, length-1)
+        meanChosen = colorLeftHalf[randRow, randCol, 0], \
+                     colorLeftHalf[randRow, randCol, 1], \
+                     colorLeftHalf[randRow, randCol, 2]
         if (meanChosen in means):
             # then we have a repeat value, which is bad
             continue
         # empty list is for later mapping of pixels
-        numpy.append(means,(meanChosen,numpy.array([])))
-        meansChosen +=1
+        numpy.append(means, (meanChosen, numpy.array([])))
+        meansChosen += 1
     # doing initial mapping of means
-    for i in range(numpy.shape(colorImagePixels)[0]):
-        for j in range(numpy.shape(colorImagePixels)[1]):
+    for i in range(width):
+        for j in range(length):
             # getting distance from each mean and then assigning a mapping
             # closestMean is index of closest mean
             closestMean = None
             closestMeanCost = None
             for z in range(len(means)):
                 # by "closest" we take (r_1-r_2)^2 + (g_1-g_2)^2 + (b_1-b_2)^2 and minimize this
-                cost = (colorImagePixels[i, j, 0] - means[z][0]) ^ 2 + \
-                       (colorImagePixels[i, j, 1] - means[z][1]) ^ 2 + \
-                       (colorImagePixels[i, j, 2] - means[z][2]) ^ 2
+                cost = (colorLeftHalf[i, j, 0] - means[z][0]) ^ 2 + \
+                       (colorLeftHalf[i, j, 1] - means[z][1]) ^ 2 + \
+                       (colorLeftHalf[i, j, 2] - means[z][2]) ^ 2
                 if ((closestMean is None) or (cost < closestMeanCost)):
                     closestMean = z
                     closestMeanCost = cost
             # now we know the closest mean index
-            numpy.append(means[closestMean][1],
-                         (colorImagePixels[i, j, 0], colorImagePixels[i, j, 1], colorImagePixels[i, j, 2]))
+            numpy.append(means[closestMean][1],(colorLeftHalf[i, j, 0], colorLeftHalf[i, j, 1], colorLeftHalf[i, j, 2]))
 
     # running actual k means algorithm now
-        #converting to numpy array
+    # converting to numpy array
     oldMeans = means
     while True:
         means = numpy.array([])
         # firstly getting new means
         for i in range(len(oldMeans)):
-            numpy.append(means,(numpy.average(oldMeans[i][1]),numpy.array([])))
+            numpy.append(means, (numpy.average(oldMeans[i][1]), numpy.array([])))
         # adding new neighbors to the respective lists of associated pixels
-        for i in range(numpy.shape(colorImagePixels)[0]):
-            for j in range(numpy.shape(colorImagePixels)[1]):
+        for i in range(numpy.shape(colorLeftHalf)[0]):
+            for j in range(numpy.shape(colorLeftHalf)[1]):
                 # getting distance from each mean and then assigning a mapping
-                    #closestMean is index of closest mean
-                closestMean= None
+                # closestMean is index of closest mean
+                closestMean = None
                 closestMeanCost = None
                 for z in range(len(means)):
                     # by "closest" we take (r_1-r_2)^2 + (g_1-g_2)^2 + (b_1-b_2)^2 and minimize this
-                    cost = (colorImagePixels[i,j,0]-means[z][0])^2 + \
-                           (colorImagePixels[i,j,1]-means[z][1])^2 +\
-                           (colorImagePixels[i,j,2]-means[z][2])^2
-                    if ((closestMean is None) or (cost<closestMeanCost) ):
+                    cost = (colorLeftHalf[i, j, 0] - means[z][0]) ^ 2 + \
+                           (colorLeftHalf[i, j, 1] - means[z][1]) ^ 2 + \
+                           (colorLeftHalf[i, j, 2] - means[z][2]) ^ 2
+                    if ((closestMean is None) or (cost < closestMeanCost)):
                         closestMean = z
                         closestMeanCost = cost
                 # now we know the closest mean index
                 numpy.append(means[closestMean][1],
-                             (colorImagePixels[i, j, 0], colorImagePixels[i, j, 1], colorImagePixels[i, j, 2]))
+                             (colorLeftHalf[i, j, 0], colorLeftHalf[i, j, 1], colorLeftHalf[i, j, 2]))
         # checking if any changes are made to assignments between means and oldmeans
         changes = False
         for i in range(len(means)):
             if set(means[i][1]) != set(oldMeans[i][1]):
-                changes=True
+                changes = True
                 break
 
         if not changes:
             # then we hit convergence
             for i in range(len(means)):
                 # converting to set, so we can easily see the pixels to recolor
-                means[i][1]=set(means[i][1])
+                means[i][1] = set(means[i][1])
             break
         else:
-            oldMeans=means
+            oldMeans = means
 
     '''
     Recolor left half of image
     '''
     # now we have our k means representative colors, we can start to "recolor" our left half of the colored image
-    for i in range(numpy.shape(colorImagePixels)[0]):
-        for j in range(numpy.shape(colorImagePixels)[1]):
-            rgb = colorImagePixels[i,j,0],colorImagePixels[i,j,1],colorImagePixels[i,j,2]
+    for i in range(width):
+        for j in range(length):
+            rgb = colorLeftHalf[i, j, 0], colorLeftHalf[i, j, 1], colorLeftHalf[i, j, 2]
             for i in range(len(means)):
                 if rgb in means[i][1]:
                     # then this is the corresponding representative rgb value
-                    colorImagePixels[i,j,0]=means[i][0][0]
-                    colorImagePixels[i,j,1]=means[i][0][1]
-                    colorImagePixels[i,j,2] = means[i][0][2]
+                    colorLeftHalf[i, j, 0] = means[i][0][0]
+                    colorLeftHalf[i, j, 1] = means[i][0][1]
+                    colorLeftHalf[i, j, 2] = means[i][0][2]
                     break
     # now the left half of the color image is "recolored"
+    # returning the recolored left half of the image
+    return colorLeftHalf
 
-    '''
-    Read in and process black and white image
-    '''
 
-    # getting greyscale values of the black and white image
-    blackWhiteValues = io.imread(blackWhiteImage)
+# runs knn to recolor right hand side of black and white image
+    # returns the combined image as a numpy 3d array
+# colorImage is a numpy3d array of pixels representing the recolored left half of the color image
+# blackWhite image is the entire black and white image as a 2d numpy array of grey values
+def knn(colorImage, blackWhiteImage):
+    width,length = numpy.shape(blackWhiteImage)
     # getting left hand side of image and right hand side of image
-    blackWhiteTraining,blackWhiteTest = numpy.hsplit(blackWhiteValues,numpy.shape(colorImagePixels)[1])
+    blackWhiteTraining = blackWhiteImage[:,:int(length/2)]
+    blackWhiteTest = blackWhiteImage[:,:(length-int(length/2))]
     # need to go through all 3x3 patches on left hand side of image and associate them with a value
         # and representative color
     trainingShape = numpy.shape(blackWhiteTraining)
@@ -148,8 +144,8 @@ def knn(colorImage, blackWhiteImage, numMeans):
     '''
     Run knn with k=6 to get recolored right half
     '''
-
-    resultData = numpy.array()
+    resultData = numpy.zeros((width,(length-int(length/2)),3))
+    #resultData=numpy.zeros((shapes[0], shapes[1] - (shapes[1] / 2), shapes[2]))
     for i in range(testShape[0]):
 
         for j in range(testShape[1]):
@@ -208,7 +204,7 @@ def knn(colorImage, blackWhiteImage, numMeans):
                                + (blackWhiteTraining[i-1,j+1]-blackWhiteTest[i-1,j+1]) **2 \
                                + (blackWhiteTraining[i-1,j]-blackWhiteTest[i-1,j]) **2 \
                                + (blackWhiteTraining[i-1,j-1]-blackWhiteTest[i-1,j-1]) **2
-                    rgb = colorImagePixels[z,y,0],colorImagePixels[z,y,1],colorImagePixels[z,y,2]
+                    rgb = colorImage[z,y,0],colorImage[z,y,1],colorImage[z,y,2]
 
                     # seeing if we can add this data to the list
                     if (len(sixClosest)<6):
@@ -252,7 +248,11 @@ def knn(colorImage, blackWhiteImage, numMeans):
 
     # now resultData holds the recolored right half
     # we combine coloredPixels and resultData and write the output
+        #combining both 3d arrays along the horizontal axis (because they have diff # of columns)
+    outputImage = numpy.hstack(colorImage,resultData)
 
+    #returning the mashed left and right half
+    return outputImage
 
 
 # trains a model
@@ -265,7 +265,13 @@ def improved(image,model):
 
 
 #test
-bwImage("colorImage.jfif")
+colorImage = imageToArray("colorImage.jfif")
+blackWhiteArray = bwImage(colorImage)
+
+recoloredLeftHalf = kmeans(colorImage,5)
+outputBasicAgent = knn(recoloredLeftHalf,blackWhiteArray)
+
+arrayToImage(outputBasicAgent,"basicAgentOutput.jfif")
 
 '''
 I think it would be more modular if the reading in images was done here, or in a main/test method, and then the methods above used the resulting numpy arrays
