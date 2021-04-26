@@ -185,7 +185,7 @@ def knn(colorImage, blackWhiteImage):
     '''
     Run knn with k=6 to get recolored right half
     '''
-    resultData = numpy.zeros((testWidth,testLength,3))
+    resultData = numpy.zeros((testWidth,testLength,3),dtype='uint8')
     #resultData=numpy.zeros((shapes[0], shapes[1] - (shapes[1] / 2), shapes[2]))
     for i in range(testWidth):
 
