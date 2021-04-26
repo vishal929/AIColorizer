@@ -170,16 +170,15 @@ def knn(colorImage, blackWhiteImage):
     width,length = numpy.shape(blackWhiteImage)
     print("width, length of bw image: "+str(width)+", "+str(length))
     # getting left hand side of image and right hand side of image
+    #blackWhiteTraining, blackWhiteTest = numpy.hsplit(blackWhiteImage, int(length/2))
     blackWhiteTraining = blackWhiteImage[:,:int(length/2)]
-    trainingWidth,trainingLength = numpy.shape(blackWhiteTraining)
+    trainingWidth, trainingLength = numpy.shape(blackWhiteTraining)
     print("width, length of bw training: " + str(trainingWidth) + ", " + str(trainingLength))
-    blackWhiteTest = blackWhiteImage[:,:(length-int(length/2))]
+    blackWhiteTest = blackWhiteImage[:,int(length/2):]
     testWidth,testLength = numpy.shape(blackWhiteTest)
     print("width, length of bw test: " + str(testWidth) + ", " + str(testLength))
     # need to go through all 3x3 patches on left hand side of image and associate them with a value
         # and representative color
-    trainingShape = numpy.shape(blackWhiteTraining)
-    testShape = numpy.shape(blackWhiteTest)
     # UNSURE ABOUT HOW TO GET ONLY RIGHT HALF OF COLOR IMAGE SIZE HERE
         # RESULT DATA SHOULD BE 3 dimensional for r,g,b
 
@@ -238,45 +237,45 @@ def knn(colorImage, blackWhiteImage):
                     # if we reached here, we have a valid patch
                     # calculating the distance value between patches
                     distance = (int(blackWhiteTraining[z+1,y+1]) - int(blackWhiteTest[i+1,j+1]))**2 \
-                               + (int(blackWhiteTraining[z+1,y])-int(blackWhiteTest[i+1,j])) **2 \
-                               + (int(blackWhiteTraining[z+1,y-1])-int(blackWhiteTest[i+1,j-1])) **2 \
-                               + (int(blackWhiteTraining[z,y+1])-int(blackWhiteTest[i,j+1])) **2 \
-                               + (int(blackWhiteTraining[z,y])-int(blackWhiteTest[i,j]))**2 \
-                               + (int(blackWhiteTraining[z,y-1])-int(blackWhiteTest[i,j-1])) **2 \
-                               + (int(blackWhiteTraining[z-1,y+1])-int(blackWhiteTest[i-1,j+1])) **2 \
-                               + (int(blackWhiteTraining[z-1,y])-int(blackWhiteTest[i-1,j])) **2 \
-                               + (int(blackWhiteTraining[z-1,y-1])-int(blackWhiteTest[i-1,j-1])) **2
-                    rgb = colorImage[z,y,0],colorImage[z,y,1],colorImage[z,y,2]
+                        + (int(blackWhiteTraining[z+1,y])-int(blackWhiteTest[i+1,j])) ** 2 \
+                        + (int(blackWhiteTraining[z+1,y-1])-int(blackWhiteTest[i+1,j-1])) ** 2 \
+                        + (int(blackWhiteTraining[z,y+1])-int(blackWhiteTest[i,j+1])) ** 2 \
+                        + (int(blackWhiteTraining[z,y])-int(blackWhiteTest[i,j])) ** 2 \
+                        + (int(blackWhiteTraining[z,y-1])-int(blackWhiteTest[i,j-1])) ** 2 \
+                        + (int(blackWhiteTraining[z-1,y+1])-int(blackWhiteTest[i-1,j+1])) ** 2 \
+                        + (int(blackWhiteTraining[z-1,y])-int(blackWhiteTest[i-1,j])) ** 2 \
+                        + (int(blackWhiteTraining[z-1,y-1])-int(blackWhiteTest[i-1,j-1])) ** 2
+                    rgb = (colorImage[z, y, 0],colorImage[z, y, 1],colorImage[z, y, 2])
 
                     # seeing if we can add this data to the list
-                    if (len(sixClosest)<6):
+                    if len(sixClosest)<6:
                         # then we can just add it
                         #numpy.append(sixClosest,(distance,rgb))
-                        sixClosest.append((distance,rgb))
+                        sixClosest.append((distance, rgb))
                     else:
                         # then we have to replace this with the greatest value if it is larger
-                        largest=None
+                        largest= None
                         for closest in sixClosest:
-                            if largest is None or closest[0]>largest[0]:
-                                largest=closest
+                            if largest is None or closest[0] > largest[0]:
+                                largest = closest
                         #largest = numpy.argmax(sixClosest)
-                        if largest[0]>distance:
+                        if largest[0] > distance:
                             # then we can replace it
                             sixClosest.remove(largest)
-                            sixClosest.append((distance,rgb))
+                            sixClosest.append((distance, rgb))
             # now we have the six closest neighbors of this patch
             # if there is a win in representative colors, we pick that color
                 # otherwise pick color with least distance
             print("GOT CLOSEST NEIGHBORS")
             counter={}
             for c in range(len(sixClosest)):
-                if (sixClosest[c][1] in counter):
-                    counter[sixClosest[c][1]] +=1
+                if sixClosest[c][1] in counter:
+                    counter[sixClosest[c][1]] += 1
                 else:
-                    counter[sixClosest[c][1]]=0
+                    counter[sixClosest[c][1]] = 0
             allTie = True
             numOccurence = counter[sixClosest[0][1]]
-            bestColor = None
+            bestColor = sixClosest[0][1]
             for keys in counter:
                 if counter[keys] > numOccurence:
                     allTie = False
@@ -290,15 +289,15 @@ def knn(colorImage, blackWhiteImage):
                         lowestDistance= sixClosest[d][0]
                         bestColor=sixClosest[d][1]
             # we color this rgb
-            resultData[i,j,0]=bestColor[0]
-            resultData[i,j,1]=bestColor[1]
-            resultData[i,j,2]=bestColor[2]
+            resultData[i, j, 0] = bestColor[0]
+            resultData[i, j, 1] = bestColor[1]
+            resultData[i, j, 2] = bestColor[2]
             print("DID A PIXEL COLORING FOR "+str(i)+", "+str(j))
     print("FINISHED COLORING RIGHT SIDE!!!")
     # now resultData holds the recolored right half
     # we combine coloredPixels and resultData and write the output
         #combining both 3d arrays along the horizontal axis (because they have diff # of columns)
-    outputImage = numpy.hstack((colorImage,resultData))
+    outputImage = numpy.hstack((colorImage, resultData))
 
     #returning the mashed left and right half
     return outputImage
@@ -317,10 +316,12 @@ def improved(image,model):
 colorImage = imageToArray("colorImage.jfif")
 # making image much smaller for calculation purposes (og image has 1,105,440 pixels to process)
 colorWidth,colorLength,colorDim = numpy.shape(colorImage)
-colorImage =colorImage[:int(colorWidth/8),:int(colorLength/8),:]
+colorImage =colorImage[-int(colorWidth/10):,-int(colorLength/10):,:]
+arrayToImage(colorImage,"croppedImage.jfif")
 blackWhiteArray = bwImage(colorImage)
 
 recoloredLeftHalf = kmeans(colorImage,5)
+arrayToImage(recoloredLeftHalf,"recoloredLeftHalf.jfif")
 outputBasicAgent = knn(recoloredLeftHalf,blackWhiteArray)
 
 arrayToImage(outputBasicAgent,"basicAgentOutput.jfif")
