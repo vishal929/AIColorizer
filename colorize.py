@@ -331,8 +331,8 @@ def improved(image,model):
 colorImage = imageToArray("colorImage.jfif")
 # making image much smaller for calculation purposes (og image has 1,105,440 pixels to process)
 colorWidth,colorLength,colorDim = numpy.shape(colorImage)
-colorImage = colorImage[-int(colorWidth/10):,-int(colorLength/10):,:]
-#colorImage =colorImage[int(colorWidth/2): int(colorWidth/2)+int(colorWidth/5),int(colorLength/2): int(colorLength/2)+int(colorLength/5),:]
+#colorImage = colorImage[-int(colorWidth/10):,-int(colorLength/10):,:]
+colorImage =colorImage[int(colorWidth/2): int(colorWidth/2)+int(colorWidth/5),int(colorLength/2): int(colorLength/2)+int(colorLength/5),:]
 arrayToImage(colorImage,"croppedImage.jfif")
 blackWhiteArray = bwImage(colorImage)
 t1=time.time()
