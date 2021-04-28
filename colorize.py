@@ -160,6 +160,58 @@ def kmeans(colorImage,numMeans):
     print("FINISHED RECOLORING IMAGE")
     return colorLeftHalf
 
+'''in the middle of making a separate method out of picking the closest patches, 
+one thing needed is the right image parameters'''
+#returns the six closest patches to patch, a 9d numpy array
+def sixClosest(patch,....), :
+    '''
+    sixClosest = []
+    #there might be a numpy method(s) for doing what is in the distance sum
+        #for instance, get a numpy array from subtracting 2 patches (also numpy arrays), then dot that numpy array with itself
+    '''
+
+
+    # if we reached here, we have a valid 3x3 patch
+    # now we need to go to the training data and find the 6 closest 3x3 patches
+        # form of this is [(distanceValue, (rgb)) , ...]
+    sixClosest = []
+    for z in range(trainingWidth):
+        for y in range(trainingLength):
+            # need to see if surrounding squares are valid
+            # if not, then this cannot be a middle square for a 3x3 patch
+            if z + 1 >= trainingWidth or z - 1 < 0 or y + 1 >= trainingLength or y-1 < 0:
+                # invalid patch
+                continue
+
+            # if we reached here, we have a valid patch
+            # calculating the distance value between patches
+            distance = (int(blackWhiteTraining[z+1,y+1]) - int(blackWhiteTest[i+1,j+1]))**2 \
+                + (int(blackWhiteTraining[z+1,y])-int(blackWhiteTest[i+1,j])) ** 2 \
+                + (int(blackWhiteTraining[z+1,y-1])-int(blackWhiteTest[i+1,j-1])) ** 2 \
+                + (int(blackWhiteTraining[z,y+1])-int(blackWhiteTest[i,j+1])) ** 2 \
+                + (int(blackWhiteTraining[z,y])-int(blackWhiteTest[i,j])) ** 2 \
+                + (int(blackWhiteTraining[z,y-1])-int(blackWhiteTest[i,j-1])) ** 2 \
+                + (int(blackWhiteTraining[z-1,y+1])-int(blackWhiteTest[i-1,j+1])) ** 2 \
+                + (int(blackWhiteTraining[z-1,y])-int(blackWhiteTest[i-1,j])) ** 2 \
+                + (int(blackWhiteTraining[z-1,y-1])-int(blackWhiteTest[i-1,j-1])) ** 2
+            rgb = (colorImage[z, y, 0],colorImage[z, y, 1],colorImage[z, y, 2])
+
+            # seeing if we can add this data to the list
+            if len(sixClosest)<6:
+                # then we can just add it
+                #numpy.append(sixClosest,(distance,rgb))
+                sixClosest.append((distance, rgb))
+            else:
+                # then we have to replace this with the greatest value if it is larger
+                largest= None
+                for closest in sixClosest:
+                    if largest is None or closest[0] > largest[0]:
+                        largest = closest
+                #largest = numpy.argmax(sixClosest)
+                if largest[0] > distance:
+                    # then we can replace it
+                    sixClosest.remove(largest)
+                    sixClosest.append((distance, rgb))
 
 # runs knn to recolor right hand side of black and white image
     # returns the combined image as a numpy 3d array
@@ -188,52 +240,29 @@ def knn(colorImage, blackWhiteImage):
     resultData = numpy.zeros((testWidth,testLength,3),dtype='uint8')
     #resultData=numpy.zeros((shapes[0], shapes[1] - (shapes[1] / 2), shapes[2]))
     for i in range(testWidth):
-
         for j in range(testLength):
-            if i + 1 >= testWidth:
-                # invalid patch, we color this black
+
+            #border pixels are colored black because the patches created are invalid
+            if (i + 1 >= testWidth or i - 1 < 0 or j+1>=testLength or j-1<0):
                 resultData[i,j,0]=0
                 resultData[i,j,1]=0
                 resultData[i,j,2]=0
                 continue
-            if i - 1 < 0:
-                # invalid patch, we color this black
-                resultData[i, j, 0] = 0
-                resultData[i, j, 1] = 0
-                resultData[i, j, 2] = 0
-                continue
-            if j+1>=testLength:
-                # invalid patch, we color this black
-                resultData[i, j, 0] = 0
-                resultData[i, j, 1] = 0
-                resultData[i, j, 2] = 0
-                continue
-            if j-1<0:
-                # invalid patch, we color this black
-                resultData[i, j, 0] = 0
-                resultData[i, j, 1] = 0
-                resultData[i, j, 2] = 0
-                continue
+            
             # if we reached here, we have a valid 3x3 patch
             # now we need to go to the training data and find the 6 closest 3x3 patches
                 # form of this is [(distanceValue, (rgb)) , ...]
+            '''sixClosest = sixClosest(...)'''
+            
             sixClosest = []
             for z in range(trainingWidth):
-                # need to see if surrounding squares are valid
-                # if not, then this cannot be a middle square for a 3x3 patch
-                if z + 1 >= trainingWidth:
-                    # invalid patch
-                    continue
-                if z - 1 < 0:
-                    # invalid patch
-                    continue
                 for y in range(trainingLength):
-                    if y + 1 >= trainingLength:
+                    # need to see if surrounding squares are valid
+                    # if not, then this cannot be a middle square for a 3x3 patch
+                    if z + 1 >= trainingWidth or z - 1 < 0 or y + 1 >= trainingLength or y-1 < 0:
                         # invalid patch
                         continue
-                    if y - 1 < 0:
-                        # invalid patch
-                        continue
+
                     # if we reached here, we have a valid patch
                     # calculating the distance value between patches
                     distance = (int(blackWhiteTraining[z+1,y+1]) - int(blackWhiteTest[i+1,j+1]))**2 \
@@ -263,6 +292,7 @@ def knn(colorImage, blackWhiteImage):
                             # then we can replace it
                             sixClosest.remove(largest)
                             sixClosest.append((distance, rgb))
+            
             # now we have the six closest neighbors of this patch
             # if there is a win in representative colors, we pick that color
                 # otherwise pick color with least distance
