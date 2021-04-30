@@ -3,8 +3,7 @@
 def evaluateEquation():
     pass
 
-def evaluateDerivative():
-    pass
+
 
 def stochasticGradientDescent(equationFunction,derivativeFunction):
     pass
