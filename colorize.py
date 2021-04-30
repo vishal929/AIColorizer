@@ -1,7 +1,10 @@
 # I tried to keep same format as the picture you sent
 
 # WE ARE USING SCIKIT ONLY FOR IMAGE REPRESENTATION HERE! NO BUILT IN METHODS ARE USED IN OUR IMPLEMENTATION
-from random import randint
+import time
+import threading
+from collections import deque
+from random import randint, sample
 
 from skimage import io
 import numpy
@@ -231,98 +234,56 @@ def knn(colorImage, blackWhiteImage):
     print("width, length of bw test: " + str(testWidth) + ", " + str(testLength))
     # need to go through all 3x3 patches on left hand side of image and associate them with a value
         # and representative color
-    # UNSURE ABOUT HOW TO GET ONLY RIGHT HALF OF COLOR IMAGE SIZE HERE
-        # RESULT DATA SHOULD BE 3 dimensional for r,g,b
+    # adding patches to a list
+        # then the test data will refer to these patches to get the 6 best matches
+    patches=[]
+    for z in range(trainingWidth):
+        if z==0 or z==trainingWidth-1:
+            # this cannot be part of a patch
+            continue
+        for y in range (trainingLength):
+            if y==0 or y==trainingLength-1:
+                # this cannot be part of a patch
+                continue
+            # we have a valid patch here
+                # we will append only grey values here in a specific order
+                # the locations do not matter
+                # order is [top left, middle left, bottom left, middle top, middle ,middle bottom, top right, right middle, bottom left]
+            patches.append((blackWhiteTraining[z+1,y-1],
+                            blackWhiteTraining[z,y-1],
+                            blackWhiteTraining[z-1,y-1],
+                            blackWhiteTraining[z+1,y],
+                            blackWhiteTraining[z,y],
+                            blackWhiteTraining[z-1,y],
+                            blackWhiteTraining[z+1,y+1],
+                            blackWhiteTraining[z,y+1],
+                            blackWhiteTraining[z-1,y+1],
+                            (colorImage[z,y,0],colorImage[z,y,1],colorImage[z,y,2])))
+    #patches = numpy.array(patches)
+
 
     '''
     Run knn with k=6 to get recolored right half
     '''
     resultData = numpy.zeros((testWidth,testLength,3),dtype='uint8')
     #resultData=numpy.zeros((shapes[0], shapes[1] - (shapes[1] / 2), shapes[2]))
+    threads=deque()
     for i in range(testWidth):
+        if i == 0 or i == testWidth - 1:
+            # no contribution
+            continue
         for j in range(testLength):
-
-            #border pixels are colored black because the patches created are invalid
-            if (i + 1 >= testWidth or i - 1 < 0 or j+1>=testLength or j-1<0):
-                resultData[i,j,0]=0
-                resultData[i,j,1]=0
-                resultData[i,j,2]=0
+           if j == 0 or j == testLength - 1:
+                #no contribution
                 continue
-            
-            # if we reached here, we have a valid 3x3 patch
-            # now we need to go to the training data and find the 6 closest 3x3 patches
-                # form of this is [(distanceValue, (rgb)) , ...]
-            '''sixClosest = sixClosest(...)'''
-            
-            sixClosest = []
-            for z in range(trainingWidth):
-                for y in range(trainingLength):
-                    # need to see if surrounding squares are valid
-                    # if not, then this cannot be a middle square for a 3x3 patch
-                    if z + 1 >= trainingWidth or z - 1 < 0 or y + 1 >= trainingLength or y-1 < 0:
-                        # invalid patch
-                        continue
-
-                    # if we reached here, we have a valid patch
-                    # calculating the distance value between patches
-                    distance = (int(blackWhiteTraining[z+1,y+1]) - int(blackWhiteTest[i+1,j+1]))**2 \
-                        + (int(blackWhiteTraining[z+1,y])-int(blackWhiteTest[i+1,j])) ** 2 \
-                        + (int(blackWhiteTraining[z+1,y-1])-int(blackWhiteTest[i+1,j-1])) ** 2 \
-                        + (int(blackWhiteTraining[z,y+1])-int(blackWhiteTest[i,j+1])) ** 2 \
-                        + (int(blackWhiteTraining[z,y])-int(blackWhiteTest[i,j])) ** 2 \
-                        + (int(blackWhiteTraining[z,y-1])-int(blackWhiteTest[i,j-1])) ** 2 \
-                        + (int(blackWhiteTraining[z-1,y+1])-int(blackWhiteTest[i-1,j+1])) ** 2 \
-                        + (int(blackWhiteTraining[z-1,y])-int(blackWhiteTest[i-1,j])) ** 2 \
-                        + (int(blackWhiteTraining[z-1,y-1])-int(blackWhiteTest[i-1,j-1])) ** 2
-                    rgb = (colorImage[z, y, 0],colorImage[z, y, 1],colorImage[z, y, 2])
-
-                    # seeing if we can add this data to the list
-                    if len(sixClosest)<6:
-                        # then we can just add it
-                        #numpy.append(sixClosest,(distance,rgb))
-                        sixClosest.append((distance, rgb))
-                    else:
-                        # then we have to replace this with the greatest value if it is larger
-                        largest= None
-                        for closest in sixClosest:
-                            if largest is None or closest[0] > largest[0]:
-                                largest = closest
-                        #largest = numpy.argmax(sixClosest)
-                        if largest[0] > distance:
-                            # then we can replace it
-                            sixClosest.remove(largest)
-                            sixClosest.append((distance, rgb))
-            
-            # now we have the six closest neighbors of this patch
-            # if there is a win in representative colors, we pick that color
-                # otherwise pick color with least distance
-            print("GOT CLOSEST NEIGHBORS")
-            counter={}
-            for c in range(len(sixClosest)):
-                if sixClosest[c][1] in counter:
-                    counter[sixClosest[c][1]] += 1
-                else:
-                    counter[sixClosest[c][1]] = 0
-            allTie = True
-            numOccurence = counter[sixClosest[0][1]]
-            bestColor = sixClosest[0][1]
-            for keys in counter:
-                if counter[keys] > numOccurence:
-                    allTie = False
-                    bestColor = keys
-            if allTie:
-                # we have to pick the lowest distance color
-                lowestDistance = sixClosest[0][0]
-                bestColor = sixClosest[0][1]
-                for d in range(len(sixClosest)):
-                    if sixClosest[d][0]<lowestDistance:
-                        lowestDistance= sixClosest[d][0]
-                        bestColor=sixClosest[d][1]
-            # we color this rgb
-            resultData[i, j, 0] = bestColor[0]
-            resultData[i, j, 1] = bestColor[1]
-            resultData[i, j, 2] = bestColor[2]
-            print("DID A PIXEL COLORING FOR "+str(i)+", "+str(j))
+           # starting thread to handle this pixel
+           thread = threading.Thread(target=thread_knn, args=(i,j,patches,blackWhiteTest,colorImage,resultData))
+           thread.start()
+           threads.appendleft(thread)
+    # waiting on all threads to finish
+    while threads:
+        t=threads.popleft()
+        t.join()
     print("FINISHED COLORING RIGHT SIDE!!!")
     # now resultData holds the recolored right half
     # we combine coloredPixels and resultData and write the output
@@ -331,6 +292,76 @@ def knn(colorImage, blackWhiteImage):
 
     #returning the mashed left and right half
     return outputImage
+
+# idea to use threading to speedup knn
+def thread_knn(i,j,patches,blackWhiteTest,colorImage,resultData):
+    # if we reached here, we have a valid 3x3 patch
+    # now we need to go to the training data and find the 6 closest 3x3 patches
+    # form of this is [(distanceValue, (rgb)) , ...]
+    # firstly, getting random sample of 1000 patches to choose 6 best from
+    thousandPatches = sample(patches,1000)
+    sixClosest = []
+    for patch in thousandPatches:
+        # if we reached here, we have a valid patch
+        # calculating the distance value between patches
+        distance = (int(patch[0]) - int(blackWhiteTest[i + 1, j - 1])) ** 2 \
+                   + (int(patch[1]) - int(blackWhiteTest[i , j-1])) ** 2 \
+                   + (int(patch[2]) - int(blackWhiteTest[i - 1, j - 1])) ** 2 \
+                   + (int(patch[3]) - int(blackWhiteTest[i+1, j ])) ** 2 \
+                   + (int(patch[4]) - int(blackWhiteTest[i, j])) ** 2 \
+                   + (int(patch[5]) - int(blackWhiteTest[i-1, j ])) ** 2 \
+                   + (int(patch[6]) - int(blackWhiteTest[i+1 , j + 1])) ** 2 \
+                   + (int(patch[7]) - int(blackWhiteTest[i + 1, j+1])) ** 2 \
+                   + (int(patch[8]) - int(blackWhiteTest[i + 1, j +1])) ** 2
+        rgb = patch[9]
+        #rgb = (colorImage[z, y, 0], colorImage[z, y, 1], colorImage[z, y, 2])
+
+        # seeing if we can add this data to the list
+        if len(sixClosest) < 6:
+            # then we can just add it
+            # numpy.append(sixClosest,(distance,rgb))
+            sixClosest.append((distance, rgb))
+        else:
+            # then we have to replace this with the greatest value if it is larger
+            largest = None
+            for closest in sixClosest:
+                if largest is None or closest[0] > largest[0]:
+                    largest = closest
+            # largest = numpy.argmax(sixClosest)
+            if largest[0] > distance:
+                # then we can replace it
+                sixClosest.remove(largest)
+                sixClosest.append((distance, rgb))
+    # now we have the six closest neighbors of this patch
+    # if there is a win in representative colors, we pick that color
+    # otherwise pick color with least distance
+    # print("GOT CLOSEST NEIGHBORS")
+    counter = {}
+    for c in range(len(sixClosest)):
+        if sixClosest[c][1] in counter:
+            counter[sixClosest[c][1]] += 1
+        else:
+            counter[sixClosest[c][1]] = 0
+    allTie = True
+    numOccurence = counter[sixClosest[0][1]]
+    bestColor = sixClosest[0][1]
+    for keys in counter:
+        if counter[keys] > numOccurence:
+            allTie = False
+            bestColor = keys
+    if allTie:
+        # we have to pick the lowest distance color
+        lowestDistance = sixClosest[0][0]
+        bestColor = sixClosest[0][1]
+        for d in range(len(sixClosest)):
+            if sixClosest[d][0] < lowestDistance:
+                lowestDistance = sixClosest[d][0]
+                bestColor = sixClosest[d][1]
+    # we color this rgb
+    resultData[i, j, 0] = bestColor[0]
+    resultData[i, j, 1] = bestColor[1]
+    resultData[i, j, 2] = bestColor[2]
+    print("colored pixel "+ str(i)+", "+str(j))
 
 
 # trains a model
@@ -346,13 +377,24 @@ def improved(image,model):
 colorImage = imageToArray("colorImage.jfif")
 # making image much smaller for calculation purposes (og image has 1,105,440 pixels to process)
 colorWidth,colorLength,colorDim = numpy.shape(colorImage)
-colorImage =colorImage[-int(colorWidth/10):,-int(colorLength/10):,:]
+#colorImage = colorImage[-int(colorWidth/10):,-int(colorLength/10):,:]
+colorImage =colorImage[500:500+512,900:900+512,:]
 arrayToImage(colorImage,"croppedImage.jfif")
 blackWhiteArray = bwImage(colorImage)
-
+t1=time.time()
 recoloredLeftHalf = kmeans(colorImage,5)
+t2 = time.time()
+print("TOTAL CLUSTERING TIME: "+str(t2-t1))
+
+t3 = time.time()
 arrayToImage(recoloredLeftHalf,"recoloredLeftHalf.jfif")
+t4 = time.time()
+print("RECOLORING LEFT HALF TAKES "+str(t4-t3))
+
+t5 = time.time()
 outputBasicAgent = knn(recoloredLeftHalf,blackWhiteArray)
+t6 = time.time()
+print("KNN TOOK "+str(t6-t5))
 
 arrayToImage(outputBasicAgent,"basicAgentOutput.jfif")
 
