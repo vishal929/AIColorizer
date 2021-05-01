@@ -1,8 +1,11 @@
 # just a file to organize our improved model thoughts
+import sys
+
 import numpy as np
 import random
 import atexit
 import math
+import signal
 
 class Model():
     featureDim = 9
@@ -103,9 +106,9 @@ class Model():
         # gWeight_1 gWeight_2 ...
         # bWeight_1 bWeight_2 ...
     #returns the weight vectors as a tuple (redWeights, greenWeights, blueWeights)
-    def loadWeightsFromFile(self,fileName):
+    def loadWeightsFromFile(self):
         # idea, we split the output into lines, append each number into its respective weights vector
-        file = open(fileName, 'r')
+        file = open("weights.txt", 'r')
         lines = file.read().splitlines()
         stringRedWeights = lines[0].split()
         #print(stringRedWeights)
@@ -126,9 +129,9 @@ class Model():
         file.close()
 
     
-    def writeWeightsToFile(self,filename):
+    def writeWeightsToFile(self):
         # first clearing all the weights currently in the txt file
-        file = open(filename, 'w')
+        file = open("weights.txt", 'w')
         file.truncate(0)
         # now writing our numbers to the file with newlines separating
         for reds in self.redWeights:
@@ -141,6 +144,9 @@ class Model():
             file.write(str(blues)+" ")
         file.write("\n")
         file.close()
+        print("WROTE WEIGHTS TO WEIGHTS.txt")
+
+
 
 class SigmoidModel(Model):
 
@@ -166,6 +172,8 @@ class SigmoidModel(Model):
 
     def loss(self,modelrgb, actualrgb):
         pass
+
+
     
 
 
@@ -174,6 +182,11 @@ testModel = Model()
 testModel.redWeights = [3.65,4.6,0.003,9.87654]
 testModel.greenWeights = [4.34, 0.0002, 5.453, 7.0003]
 testModel.blueWeights = [7.984, 0.0543, 0.0000003, 0.3]
+
+#testing atexit functionality
+atexit.register(Model.writeWeightsToFile, testModel)
+while True:
+    pass
 
 testModel.writeWeightsToFile("weights.txt")
 
