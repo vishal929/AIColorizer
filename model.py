@@ -52,10 +52,20 @@ class Model():
             #pixel chosen is at (row,col), then the patch is built around it
             row = random.randint(1, blackWhiteTraining.shape[0] - 2)
             col = random.randint(1, blackWhiteTraining.shape[1] - 2)
+            '''
             x = np.array([blackWhiteTraining[row-1][col-1], blackWhiteTraining[row-1][col], blackWhiteTraining[row-1][col+1],
                 blackWhiteTraining[row][col-1], blackWhiteTraining[row][col], blackWhiteTraining[row][col+1],
                 blackWhiteTraining[row+1][col-1], blackWhiteTraining[row+1][col], blackWhiteTraining[row+1][col+1]])
-
+            '''
+            x = np.array([blackWhiteTraining[row - 1][col - 1], #column1
+                blackWhiteTraining[row][col - 1],
+                blackWhiteTraining[row + 1][col - 1],
+                blackWhiteTraining[row - 1][col],#column2
+                blackWhiteTraining[row][col],
+                blackWhiteTraining[row + 1][col],
+                blackWhiteTraining[row - 1][col + 1],#column3
+                blackWhiteTraining[row][col + 1],
+                blackWhiteTraining[row + 1][col + 1]])
             # (Soumya: I just realized we don't need the value for the loss gradient if we plug x and y into the loss function we have)
             model_rgb = self.evaluateModel(x) #the rgb value the model predicts, corresponds to f(x)
             actual_rgb = colorTraining[row][col] #the rgb value from the data, corresponds to y
