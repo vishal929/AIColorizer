@@ -133,15 +133,15 @@ class Model():
 # PATCH IS ASSUMING THE FOLLOWING FORMAT FOR EACH PATCH (CONSISTENT WITH COLORIZE.py format):
     '''
     [
-    blackWhiteTraining[z + 1, y - 1],
-    blackWhiteTraining[z, y - 1],
     blackWhiteTraining[z - 1, y - 1],
-    blackWhiteTraining[z + 1, y],
-    blackWhiteTraining[z, y],
+    blackWhiteTraining[z, y - 1],
+    blackWhiteTraining[z + 1, y - 1],
     blackWhiteTraining[z - 1, y],
-    blackWhiteTraining[z + 1, y + 1],
+    blackWhiteTraining[z, y],
+    blackWhiteTraining[z + 1, y],
+    blackWhiteTraining[z - 1, y + 1],
     blackWhiteTraining[z, y + 1],
-    blackWhiteTraining[z - 1, y + 1]]
+    blackWhiteTraining[z + 1, y + 1]]
     '''
 class SigmoidModel(Model):
 

@@ -249,15 +249,15 @@ def knn(colorImage, blackWhiteImage):
                 # we will append only grey values here in a specific order
                 # the locations do not matter
                 # order is [top left, middle left, bottom left, middle top, middle ,middle bottom, top right, right middle, bottom left]
-            patches.append((blackWhiteTraining[z+1,y-1],
+            patches.append((blackWhiteTraining[z-1,y-1],
                             blackWhiteTraining[z,y-1],
-                            blackWhiteTraining[z-1,y-1],
-                            blackWhiteTraining[z+1,y],
-                            blackWhiteTraining[z,y],
+                            blackWhiteTraining[z+1,y-1],
                             blackWhiteTraining[z-1,y],
-                            blackWhiteTraining[z+1,y+1],
-                            blackWhiteTraining[z,y+1],
+                            blackWhiteTraining[z,y],
+                            blackWhiteTraining[z+1,y],
                             blackWhiteTraining[z-1,y+1],
+                            blackWhiteTraining[z,y+1],
+                            blackWhiteTraining[z+1,y+1],
                             (colorImage[z,y,0],colorImage[z,y,1],colorImage[z,y,2])))
     #patches = numpy.array(patches)
 
@@ -304,14 +304,14 @@ def thread_knn(i,j,patches,blackWhiteTest,colorImage,resultData):
     for patch in thousandPatches:
         # if we reached here, we have a valid patch
         # calculating the distance value between patches
-        distance = (int(patch[0]) - int(blackWhiteTest[i + 1, j - 1])) ** 2 \
+        distance = (int(patch[0]) - int(blackWhiteTest[i - 1, j - 1])) ** 2 \
                    + (int(patch[1]) - int(blackWhiteTest[i , j-1])) ** 2 \
-                   + (int(patch[2]) - int(blackWhiteTest[i - 1, j - 1])) ** 2 \
-                   + (int(patch[3]) - int(blackWhiteTest[i+1, j ])) ** 2 \
+                   + (int(patch[2]) - int(blackWhiteTest[i + 1, j - 1])) ** 2 \
+                   + (int(patch[3]) - int(blackWhiteTest[i-1, j ])) ** 2 \
                    + (int(patch[4]) - int(blackWhiteTest[i, j])) ** 2 \
-                   + (int(patch[5]) - int(blackWhiteTest[i-1, j ])) ** 2 \
-                   + (int(patch[6]) - int(blackWhiteTest[i+1 , j + 1])) ** 2 \
-                   + (int(patch[7]) - int(blackWhiteTest[i + 1, j+1])) ** 2 \
+                   + (int(patch[5]) - int(blackWhiteTest[i+1, j ])) ** 2 \
+                   + (int(patch[6]) - int(blackWhiteTest[i-1 , j + 1])) ** 2 \
+                   + (int(patch[7]) - int(blackWhiteTest[i , j+1])) ** 2 \
                    + (int(patch[8]) - int(blackWhiteTest[i + 1, j +1])) ** 2
         rgb = patch[9]
         #rgb = (colorImage[z, y, 0], colorImage[z, y, 1], colorImage[z, y, 2])
