@@ -181,9 +181,15 @@ class SigmoidModel(Model):
         # we have 3 gradients: 1 for red function, 1 for green function, and 1 for blue function
         modelR, modelG, modelB = modelrgb
         actualR, actualG, actualB = actualrgb
-        redGradient = (self.sigmoid(modelR)-actualR) * phi
-        greenGradient = (self.sigmoid(modelG) - actualG) * phi
-        blueGradient = (self.sigmoid(modelB) - actualB) * phi
+        redGradient = 2 * (255 * (self.sigmoid(modelR)-actualR)) * \
+                      (255 * self.sigmoid(modelR) * (1-self.sigmoid(modelR))) \
+                      * phi
+        greenGradient = 2 * (255 * (self.sigmoid(modelG) - actualG)) * \
+                      (255 * self.sigmoid(modelG) * (1 - self.sigmoid(modelG))) \
+                      * phi
+        blueGradient = 2 * (255 * (self.sigmoid(modelB) - actualB)) * \
+                      (255 * self.sigmoid(modelB) * (1 - self.sigmoid(modelB))) \
+                      * phi
 
         return redGradient, greenGradient, blueGradient
 
@@ -199,7 +205,7 @@ class SigmoidModel(Model):
         for greyValue in patch:
             phi.append(greyValue)
             phi.append(greValue**2)
-        return phi
+        return np.array(phi)
         '''
         #my idea of the middle component mattering the most, then 1 level out mattering less, last level mattering the least)
 
