@@ -40,7 +40,7 @@ class Model():
     '''
         
     #evaluate gradient of the loss (which we precalculate) at vector x
-    def loss_gradient(self,modelrgb, actualrgb):
+    def loss_gradient(self,modelrgb, actualrgb, phi):
         # (-y_i +sigmoid(w DOT x_i)) (jth component of x_i) #actually since this would return a vector, I think its just x_i
         pass
 
@@ -147,29 +147,65 @@ class Model():
         print("WROTE WEIGHTS TO WEIGHTS.txt")
 
 
-
+# PATCH IS ASSUMING THE FOLLOWING FORMAT FOR EACH PATCH (CONSISTENT WITH COLORIZE.py format):
+    '''
+    [
+    blackWhiteTraining[z + 1, y - 1],
+    blackWhiteTraining[z, y - 1],
+    blackWhiteTraining[z - 1, y - 1],
+    blackWhiteTraining[z + 1, y],
+    blackWhiteTraining[z, y],
+    blackWhiteTraining[z - 1, y],
+    blackWhiteTraining[z + 1, y + 1],
+    blackWhiteTraining[z, y + 1],
+    blackWhiteTraining[z - 1, y + 1]]
+    '''
 class SigmoidModel(Model):
 
-    def sigmoid(z):
+    def sigmoid(self,z):
         return 1 / (1 + math.exp(-z))
 
     def evaluateModel(self, patch):
         #return r,g,b value model gets at patch
         # sigmoid function is:  sigmoid(z) = 1/(1+e^{-z})
-        phi = features(patch) #should probably return a numpy array
+        phi = self.features(patch) #should probably return a numpy array
         red_dot = np.dot(self.redWeights, phi)
         green_dot = np.dot(self.greenWeights, phi)
         blue_dot = np.dot(self.blueWeights, phi)
         return 255 * self.sigmoid(red_dot) , 255 * self.sigmoid(green_dot), 255 * self.sigmoid(blue_dot)
 
     #evaluate gradient of the loss (which we precalculate) at vector x
-    def loss_gradient(self,modelrgb, actualrgb):
-        # (-y_i +sigmoid(w DOT x_i)) (jth component of x_i) #actually since this would return a vector, I think its just x_i
-        pass
+        # phi is the feature included data vector
+    def loss_gradient(self,modelrgb, actualrgb, phi):
+        # (-y_i +sigmoid(w DOT x_i))x_i
+        # we have 3 gradients: 1 for red function, 1 for green function, and 1 for blue function
+        modelR, modelG, modelB = modelrgb
+        actualR, actualG, actualB = actualrgb
+        redGradient = (self.sigmoid(modelR)-actualR) * phi
+        greenGradient = (self.sigmoid(modelG) - actualG) * phi
+        blueGradient = (self.sigmoid(modelB) - actualB) * phi
 
+        return redGradient, greenGradient, blueGradient
+
+    # we can hardcode what features we want for now
     def features(self,patch):
+        # standard features
+            # appending 1 for the w_0 weight
+        np.append(patch,1)
+        return patch
+        # x^2 features
+        '''
+        phi =[1]
+        for greyValue in patch:
+            phi.append(greyValue)
+            phi.append(greValue**2)
+        return phi
+        '''
+        #my idea of the middle component mattering the most, then 1 level out mattering less, last level mattering the least)
+
         pass
 
+    # just squared loss between returned rgb value from model and the actual rgb value
     def loss(self,modelrgb, actualrgb):
         pass
 
