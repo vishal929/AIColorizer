@@ -15,33 +15,15 @@ class Model():
 
     #for now this is equivalent to saying there are no features
     def features(self,patch):
+        np.append(patch,1)
         return patch
 
-    '''maybe this method isn't needed and can just be part of training
-    def initializeWeights(self):
-        pass
-    '''
-
+    #return r,g,b value model gets at patch
     def evaluateModel(self, patch):
-        #return r,g,b value model gets at patch
-        # sigmoid function is:  sigmoid(z) = 1/(1+e^{-z})
         pass
-
-    ''' maybe simpler to not have these
-    #helper to evaluateModel and can be called separately
-    def red(self,patch):
-        pass
-
-    def green(self,patch):
-        pass
-
-    def blue(self,patch):
-        pass
-    '''
         
     #evaluate gradient of the loss (which we precalculate) at vector x
-    def loss_gradient(self,modelrgb, actualrgb, phi):
-        # (-y_i +sigmoid(w DOT x_i)) (jth component of x_i) #actually since this would return a vector, I think its just x_i
+    def loss_gradient(self, patch, actualrgb):
         pass
 
     def loss(self,modelrgb, actualrgb):
@@ -74,11 +56,12 @@ class Model():
                 blackWhiteTraining[row][col-1], blackWhiteTraining[row][col], blackWhiteTraining[row][col+1],
                 blackWhiteTraining[row+1][col-1], blackWhiteTraining[row+1][col], blackWhiteTraining[row+1][col+1]])
 
+            # (Soumya: I just realized we don't need the value for the loss gradient if we plug x and y into the loss function we have)
             model_rgb = self.evaluateModel(x) #the rgb value the model predicts, corresponds to f(x)
             actual_rgb = colorTraining[row][col] #the rgb value from the data, corresponds to y
 
             # update w_{t+1}=w_t - alpha (GRADIENT(LOSS_i))(w_t)
-            grad = self.loss_gradient(model_rgb, actual_rgb)
+            grad = self.loss_gradient(x, actual_rgb)
             self.redWeights = self.redWeights - alpha * grad[0]
             self.greenWeights = self.greenWeights - alpha * grad[1]
             self.blueWeights = self.blueWeights - alpha * grad[2]
@@ -88,7 +71,7 @@ class Model():
                 if loadWeightsFromFile were changed so that it just writes to a set file, then it would work
                 the issue with checking for stop is that the program would have to prompt user every x iterations or so about whether they want to stop'''
             
-            #check for convergence with the old weights (experiment with the number 0.1)
+            #check for convergence with the old weights - stop if change in weights < 0.1 (experiment with the number 0.1)
             if (np.less(np.absolute(old_redWeights - self.redWeights), np.full(featureDim, 0.1)) and
                 np.less(np.absolute(old_greenWeights - self.greenWeights), np.full(featureDim, 0.1)) and
                 np.less(np.absolute(old_blueWeights - self.blueWeights), np.full(featureDim, 0.1))):
@@ -174,22 +157,22 @@ class SigmoidModel(Model):
         blue_dot = np.dot(self.blueWeights, phi)
         return 255 * self.sigmoid(red_dot) , 255 * self.sigmoid(green_dot), 255 * self.sigmoid(blue_dot)
 
-    #evaluate gradient of the loss (which we precalculate) at vector x
-        # phi is the feature included data vector
-    def loss_gradient(self,modelrgb, actualrgb, phi):
-        # (-y_i +sigmoid(w DOT x_i))x_i
-        # we have 3 gradients: 1 for red function, 1 for green function, and 1 for blue function
-        modelR, modelG, modelB = modelrgb
+    #evaluate gradient of the loss at vector x for red, green, and blue
+        # phi is the feature included data vector - Soumya: we already have the self.features(patch)
+    def loss_gradient(self, patch, actualrgb):
+        # 510 (255 sigma(w dot features(patch)) - actualrgb[c]) sigma(w dot features(patch))(1 - sigma(w dot features(patch)))
+        #modelR, modelG, modelB = modelrgb #Soumya: each is R(x), G(x), and B(x) resp, but loss is in terms of x and y
         actualR, actualG, actualB = actualrgb
-        redGradient = 2 * (255 * (self.sigmoid(modelR)-actualR)) * \
-                      (255 * self.sigmoid(modelR) * (1-self.sigmoid(modelR))) \
-                      * phi
-        greenGradient = 2 * (255 * (self.sigmoid(modelG) - actualG)) * \
-                      (255 * self.sigmoid(modelG) * (1 - self.sigmoid(modelG))) \
-                      * phi
-        blueGradient = 2 * (255 * (self.sigmoid(modelB) - actualB)) * \
-                      (255 * self.sigmoid(modelB) * (1 - self.sigmoid(modelB))) \
-                      * phi
+
+        phi = self.features(patch) #should probably return a numpy array
+        #each sigmoid term is sigma(w dot features(patch))
+        red_sigmoid = self.sigmoid(np.dot(self.redWeights, phi))
+        green_sigmoid = self.sigmoid(np.dot(self.redWeights, phi))
+        blue_sigmoid = self.sigmoid(np.dot(self.redWeights, phi))
+
+        redGradient = 510 * (255 * red_sigmoid - actualR) * red_sigmoid * (1-red_sigmoid) * phi
+        greenGradient = 510 * (255 * green_sigmoid - actualG) * green_sigmoid * (1-green_sigmoid) * phi
+        blueGradient = 510 * (255 * blue_sigmoid - actualB) * blue_sigmoid * (1-blue_sigmoid) * phi
 
         return redGradient, greenGradient, blueGradient
 
@@ -213,7 +196,9 @@ class SigmoidModel(Model):
 
     # just squared loss between returned rgb value from model and the actual rgb value
     def loss(self,modelrgb, actualrgb):
-        pass
+        modelR, modelG, modelB = modelrgb
+        actualR, actualG, actualB = actualrgb
+        return (modelR - actualR)**2, (modelG - actualG)**2, (modelB - actualB)**2
 
 
     
