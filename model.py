@@ -94,11 +94,13 @@ class Model():
                 the issue with checking for stop is that the program would have to prompt user every x iterations or so about whether they want to stop'''
             
             #check for convergence with the old weights - stop if change in weights < 0.1 (experiment with the number 0.1)
+            '''
             if (np.less(np.absolute(old_redWeights - self.redWeights), np.full(self.featureDim, 0.1)) and
                 np.less(np.absolute(old_greenWeights - self.greenWeights), np.full(self.featureDim, 0.1)) and
                 np.less(np.absolute(old_blueWeights - self.blueWeights), np.full(self.featureDim, 0.1))):
                 self.writeWeightsToFile()
                 break
+            '''
 
 
 
@@ -172,7 +174,7 @@ class Model():
 class SigmoidModel(Model):
 
     def sigmoid(self,z):
-        return 1 / (1 + math.exp(-z))
+        return 1 / (1 + np.exp(-z))
 
     def evaluateModel(self, patch):
         #return r,g,b value model gets at patch

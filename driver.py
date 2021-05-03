@@ -1,4 +1,5 @@
 # just hosts logic for starting up training of our model, computing loss of an output image compared to the actual
+import atexit
 
 import numpy as np
 
@@ -18,10 +19,10 @@ bwWidth, bwLength = np.shape(bwImage)
 yesNo = int(input("Please enter 0 if you want to train the model and 1 if you want to test the output and compute the loss!"))
 if yesNo ==0:
     # train
-    if not ourModel.loadWeightsFromFile():
-        # then the weights file was not found, we will proceed with training and write/create new file later
-            # starting alpha with 0.001
-        ourModel.trainModel(bwImage[:,:int(bwLength/2)],colorImage[:,:int(cLength/2),:],0.001)
+    atexit.register(model.Model.writeWeightsToFile, ourModel)
+    ourModel.loadWeightsFromFile()
+    # starting alpha with 0.001
+    ourModel.trainModel(bwImage[:,:int(bwLength/2)],colorImage[:,:int(cLength/2),:],0.001)
 else:
     # output image and compute loss
     # coloring the entire image and returning the loss
