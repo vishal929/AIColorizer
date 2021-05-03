@@ -22,7 +22,7 @@ if yesNo ==0:
     atexit.register(model.Model.writeWeightsToFile, ourModel)
     ourModel.loadWeightsFromFile()
     # starting alpha with 0.001
-    ourModel.trainModel(bwImage[:,:int(bwLength/2)],colorImage[:,:int(cLength/2),:],0.001)
+    ourModel.trainModel(bwImage[:,:int(bwLength/2)],colorImage[:,:int(cLength/2),:],0.1)
 else:
     # output image and compute loss
     # coloring the entire image and returning the loss

@@ -39,9 +39,17 @@ class Model():
     def trainModel(self,blackWhiteTraining,colorTraining, alpha):
         #if the weights list is empty, initialize random small weights
         if len(self.redWeights) < 1:
-            self.redWeights = np.random.rand(self.featureDim) * 0.001
-            self.greenWeights = np.random.rand(self.featureDim) * 0.001
-            self.blueWeights = np.random.rand(self.featureDim) * 0.001
+
+            self.redWeights = np.random.rand(self.featureDim)*0.001
+            self.greenWeights = np.random.rand(self.featureDim)*0.001
+            self.blueWeights = np.random.rand(self.featureDim)*0.001
+            self.redWeights = np.array([-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5]).astype(np.double)
+            self.greenWeights = np.array([-0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5]).astype(np.double)
+            self.blueWeights = np.array([-0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5]).astype(np.double)
+            print("STARTING RED: "+str(self.redWeights))
+            print("STARTING GREEN: "+str(self.greenWeights))
+            print("STARTING BLUE: "+str(self.blueWeights))
+
 
         while(True):
             #in order to check for convergence, maybe theres a better way to do this than to make copies
@@ -74,6 +82,13 @@ class Model():
 
             # update w_{t+1}=w_t - alpha (GRADIENT(LOSS_i))(w_t)
             grad = self.loss_gradient(x, actual_rgb)
+            print("GRADIENT: "+str(grad))
+            redModifier = alpha* grad[0]
+            greenModifier = alpha*grad[1]
+            blueModifier = alpha*grad[2]
+            print("RED MODIFIER: "+str(redModifier))
+            print("GREEN MODIFIER: "+str(greenModifier))
+            print("BLUE MODIFIER: "+str(blueModifier))
             self.redWeights = self.redWeights - alpha * grad[0]
             self.greenWeights = self.greenWeights - alpha * grad[1]
             self.blueWeights = self.blueWeights - alpha * grad[2]
@@ -197,6 +212,10 @@ class SigmoidModel(Model):
         red_sigmoid = self.sigmoid(np.dot(self.redWeights, phi))
         green_sigmoid = self.sigmoid(np.dot(self.redWeights, phi))
         blue_sigmoid = self.sigmoid(np.dot(self.redWeights, phi))
+
+        print("MODEL RED: "+str(255*red_sigmoid))
+        print("MODEL GREEN: "+str(255*green_sigmoid))
+        print("MODEL BLUE: "+str(255*blue_sigmoid))
 
         redGradient = 510 * (255 * red_sigmoid - actualR) * red_sigmoid * (1-red_sigmoid) * phi
         greenGradient = 510 * (255 * green_sigmoid - actualG) * green_sigmoid * (1-green_sigmoid) * phi
