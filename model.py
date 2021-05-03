@@ -50,6 +50,9 @@ class Model():
             print("STARTING GREEN: "+str(self.greenWeights))
             print("STARTING BLUE: "+str(self.blueWeights))
 
+        # every 1000 iterations, we will calculate the loss of our training data and stop if we are satisfied
+        threshold=1000
+        iterCount=0
 
         while(True):
             #in order to check for convergence, maybe theres a better way to do this than to make copies
@@ -77,7 +80,7 @@ class Model():
                 blackWhiteTraining[row + 1][col + 1]])
 
             # (Soumya: I just realized we don't need the value for the loss gradient if we plug x and y into the loss function we have)
-            model_rgb = self.evaluateModel(x) #the rgb value the model predicts, corresponds to f(x)
+             #the rgb value the model predicts, corresponds to f(x)
             actual_rgb = colorTraining[row][col] #the rgb value from the data, corresponds to y
 
             # update w_{t+1}=w_t - alpha (GRADIENT(LOSS_i))(w_t)
@@ -103,6 +106,19 @@ class Model():
             print(self.blueWeights)
             print("END OF WEIGHTS -----------------------------------")
 
+            iterCount +=1
+            if iterCount == threshold:
+                # computing the loss
+                # computing loss and seeing if we are close now (maybe like 100 ish loss is acceptable? we will see)
+                loss = self.trainingLoss(blackWhiteTraining,colorTraining)
+                print("GOT LOSS :"+str(loss))
+                if loss[0] <= 100 and loss[1]<=100 and loss[2]<=100:
+                    # this is close enough, for now
+                    print("DONE TRAINING")
+                    self.writeWeightsToFile()
+                    break
+                # resetting iterCount
+                iterCount=0
             #check for keyword "stop" from user, if this happens then call writetofile
             '''looking to atexit.register() to write data when press ctrl-c, the only issue is it needs a function that does not have arguments
                 if loadWeightsFromFile were changed so that it just writes to a set file, then it would work
@@ -119,9 +135,14 @@ class Model():
 
 
 
-    #generates a color image from blackWhiteTest and returns the observed loss when compared to colorTest
+    #generates a color image from bwImage to compare to the original color image
     def testModel(blackWhiteTest,colorTest):
         pass
+
+    # computes loss for the training image
+    def trainingLoss(self,blackWhiteTraining,colorImageTraining):
+        pass
+
 
     # TXT FILE ENCODING:
         # redWeight_1 redWeight_2 ...
@@ -199,6 +220,40 @@ class SigmoidModel(Model):
         green_dot = np.dot(self.greenWeights, phi)
         blue_dot = np.dot(self.blueWeights, phi)
         return 255 * self.sigmoid(red_dot) , 255 * self.sigmoid(green_dot), 255 * self.sigmoid(blue_dot)
+
+    # computes loss for the training image
+    def trainingLoss(self, blackWhiteTraining, colorImageTraining):
+        # going through all the patches, computing, and returning the loss
+        trainingWidth, trainingLength = np.shape(blackWhiteTraining)
+        redLoss = 0
+        greenLoss = 0
+        blueLoss = 0
+        for row in range(trainingWidth):
+            if row == 0 or row == trainingWidth - 1:
+                continue
+            for col in range(trainingLength):
+                if col == 0 or col == trainingLength - 1:
+                    continue
+                # this is a valid patch, we first compute the model rgb value
+                patch = [blackWhiteTraining[row - 1, col - 1],
+                         blackWhiteTraining[row, col - 1],
+                         blackWhiteTraining[row + 1, col - 1],
+                         blackWhiteTraining[row - 1, col],
+                         blackWhiteTraining[row, col],
+                         blackWhiteTraining[row + 1, col],
+                         blackWhiteTraining[row - 1, col + 1],
+                         blackWhiteTraining[row, col + 1],
+                         blackWhiteTraining[row + 1, col + 1]]
+                phi = self.features(patch)
+                # getting the pixel value
+                modelR= 255 * self.sigmoid(np.dot(self.redWeights,phi))
+                modelG = 255 * self.sigmoid(np.dot(self.greenWeights, phi))
+                modelB = 255 * self.sigmoid(np.dot(self.blueWeights, phi))
+                redLoss += (modelR - colorImageTraining[row, col, 0]) **2
+                greenLoss += (modelG - colorImageTraining[row, col ,1]) **2
+                blueLoss += (modelB - colorImageTraining[row,col,2])**2
+        # returning loss for each model
+        return (redLoss,greenLoss,blueLoss)
 
     #evaluate gradient of the loss at vector x for red, green, and blue
         # phi is the feature included data vector - Soumya: we already have the self.features(patch)
