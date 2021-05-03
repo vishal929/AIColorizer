@@ -336,29 +336,30 @@ def improved(image,model):
 
 
 #test
-colorImage = imageToArray("colorImage.jfif")
-# making image much smaller for calculation purposes (og image has 1,105,440 pixels to process)
-colorWidth,colorLength,colorDim = numpy.shape(colorImage)
-#colorImage = colorImage[-int(colorWidth/10):,-int(colorLength/10):,:]
-colorImage =colorImage[500:500+512,900:900+512,:]
-arrayToImage(colorImage,"croppedImage.jfif")
-blackWhiteArray = bwImage(colorImage)
-t1=time.time()
-recoloredLeftHalf = kmeans(colorImage,5)
-t2 = time.time()
-print("TOTAL CLUSTERING TIME: "+str(t2-t1))
+def test():
+    colorImage = imageToArray("colorImage.jfif")
+    # making image much smaller for calculation purposes (og image has 1,105,440 pixels to process)
+    colorWidth,colorLength,colorDim = numpy.shape(colorImage)
+    #colorImage = colorImage[-int(colorWidth/10):,-int(colorLength/10):,:]
+    colorImage =colorImage[500:500+512,900:900+512,:]
+    arrayToImage(colorImage,"croppedImage.jfif")
+    blackWhiteArray = bwImage(colorImage)
+    t1=time.time()
+    recoloredLeftHalf = kmeans(colorImage,5)
+    t2 = time.time()
+    print("TOTAL CLUSTERING TIME: "+str(t2-t1))
 
-t3 = time.time()
-arrayToImage(recoloredLeftHalf,"recoloredLeftHalf.jfif")
-t4 = time.time()
-print("RECOLORING LEFT HALF TAKES "+str(t4-t3))
+    t3 = time.time()
+    arrayToImage(recoloredLeftHalf,"recoloredLeftHalf.jfif")
+    t4 = time.time()
+    print("RECOLORING LEFT HALF TAKES "+str(t4-t3))
 
-t5 = time.time()
-outputBasicAgent = knn(recoloredLeftHalf,blackWhiteArray)
-t6 = time.time()
-print("KNN TOOK "+str(t6-t5))
+    t5 = time.time()
+    outputBasicAgent = knn(recoloredLeftHalf,blackWhiteArray)
+    t6 = time.time()
+    print("KNN TOOK "+str(t6-t5))
 
-arrayToImage(outputBasicAgent,"basicAgentOutput.jfif")
+    arrayToImage(outputBasicAgent,"basicAgentOutput.jfif")
 
 '''
 I think it would be more modular if the reading in images was done here, or in a main/test method, and then the methods above used the resulting numpy arrays

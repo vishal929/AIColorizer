@@ -8,7 +8,8 @@ import math
 import signal
 
 class Model():
-    featureDim = 9
+    # standard featureDim is 10 --> (1,x_1,x_2,x_3,x_4,x_5,x_6,x_7,x_8,x_9)
+    featureDim = 10
     redWeights=[]
     greenWeights=[]
     blueWeights=[]
@@ -38,9 +39,9 @@ class Model():
     def trainModel(self,blackWhiteTraining,colorTraining, alpha):
         #if the weights list is empty, initialize random small weights
         if len(self.redWeights) < 1:
-            self.redWeights = np.random.rand(featureDim) * 0.001
-            self.greenWeights = np.random.rand(featureDim) * 0.001
-            self.blueWeights = np.random.rand(featureDim) * 0.001
+            self.redWeights = np.random.rand(self.featureDim) * 0.001
+            self.greenWeights = np.random.rand(self.featureDim) * 0.001
+            self.blueWeights = np.random.rand(self.featureDim) * 0.001
 
         while(True):
             #in order to check for convergence, maybe theres a better way to do this than to make copies
@@ -66,6 +67,7 @@ class Model():
                 blackWhiteTraining[row - 1][col + 1],#column3
                 blackWhiteTraining[row][col + 1],
                 blackWhiteTraining[row + 1][col + 1]])
+
             # (Soumya: I just realized we don't need the value for the loss gradient if we plug x and y into the loss function we have)
             model_rgb = self.evaluateModel(x) #the rgb value the model predicts, corresponds to f(x)
             actual_rgb = colorTraining[row][col] #the rgb value from the data, corresponds to y
@@ -76,15 +78,25 @@ class Model():
             self.greenWeights = self.greenWeights - alpha * grad[1]
             self.blueWeights = self.blueWeights - alpha * grad[2]
 
+            # just printing weights after each adjustment for convenience
+            print("NEW WEIGHTS ----------- RGB ORDER ----------------")
+            print("RED WEIGHTS")
+            print(self.redWeights)
+            print("GREEN WEIGHTS")
+            print(self.greenWeights)
+            print("BLUE WEIGHTS")
+            print(self.blueWeights)
+            print("END OF WEIGHTS -----------------------------------")
+
             #check for keyword "stop" from user, if this happens then call writetofile
             '''looking to atexit.register() to write data when press ctrl-c, the only issue is it needs a function that does not have arguments
                 if loadWeightsFromFile were changed so that it just writes to a set file, then it would work
                 the issue with checking for stop is that the program would have to prompt user every x iterations or so about whether they want to stop'''
             
             #check for convergence with the old weights - stop if change in weights < 0.1 (experiment with the number 0.1)
-            if (np.less(np.absolute(old_redWeights - self.redWeights), np.full(featureDim, 0.1)) and
-                np.less(np.absolute(old_greenWeights - self.greenWeights), np.full(featureDim, 0.1)) and
-                np.less(np.absolute(old_blueWeights - self.blueWeights), np.full(featureDim, 0.1))):
+            if (np.less(np.absolute(old_redWeights - self.redWeights), np.full(self.featureDim, 0.1)) and
+                np.less(np.absolute(old_greenWeights - self.greenWeights), np.full(self.featureDim, 0.1)) and
+                np.less(np.absolute(old_blueWeights - self.blueWeights), np.full(self.featureDim, 0.1))):
                 self.writeWeightsToFile()
                 break
 
@@ -101,7 +113,10 @@ class Model():
     #returns the weight vectors as a tuple (redWeights, greenWeights, blueWeights)
     def loadWeightsFromFile(self):
         # idea, we split the output into lines, append each number into its respective weights vector
-        file = open("weights.txt", 'r')
+        try:
+            file = open("weights.txt", 'r')
+        except :
+            return False
         lines = file.read().splitlines()
         stringRedWeights = lines[0].split()
         #print(stringRedWeights)
@@ -113,13 +128,14 @@ class Model():
         #print(stringBlueWeights)
         actualBlueWeights=[]
         for i in range(len(stringRedWeights)):
-            actualRedWeights.append(float(stringRedWeights[i]))
-            actualGreenWeights.append(float(stringGreenWeights[i]))
-            actualBlueWeights.append(float(stringBlueWeights[i]))
+            actualRedWeights.append(np.double(stringRedWeights[i]))
+            actualGreenWeights.append(np.double(stringGreenWeights[i]))
+            actualBlueWeights.append(np.double(stringBlueWeights[i]))
         self.redWeights=actualRedWeights
         self.greenWeights=actualGreenWeights
         self.blueWeights=actualBlueWeights
         file.close()
+        return True
 
     
     def writeWeightsToFile(self):
@@ -191,7 +207,11 @@ class SigmoidModel(Model):
         # standard features
             # appending 1 for the w_0 weight
         np.append(patch,1)
-        return patch
+        features=[1]
+        for value in patch:
+            features.append(value)
+
+        return np.array(features)
         # x^2 features
         '''
         phi =[1]
@@ -215,6 +235,7 @@ class SigmoidModel(Model):
 
 
 # testing getting weights and writing weights to a file
+'''
 testModel = Model()
 testModel.redWeights = [3.65,4.6,0.003,9.87654]
 testModel.greenWeights = [4.34, 0.0002, 5.453, 7.0003]
@@ -234,6 +255,7 @@ otherTestModel.loadWeightsFromFile("weights.txt")
 print(otherTestModel.redWeights)
 print(otherTestModel.greenWeights)
 print(otherTestModel.blueWeights)
+'''
 
 '''
 input X --> y
