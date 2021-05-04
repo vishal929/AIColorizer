@@ -11,11 +11,12 @@ import numpy
 
 # converts numpy array to image with specified name
 def arrayToImage(array,imageName):
+    array = array.astype(numpy.uint8)
     io.imsave(imageName,array)
 
 # converts image to numpyArray for manipulation
 def imageToArray(imageName):
-    return io.imread(imageName)
+    return io.imread(imageName).astype(numpy.double)
 
 # image is a numpy array of 3 dimensions representing a color image
     # returns the numpy array representing a black and white image
@@ -23,7 +24,7 @@ def bwImage(colorImage):
     #colorImage is a np array with rgb "layers" i.e mxn pixels in 3 dimensions for rgb
     #greyscale function is replacing (r,g,b) with 0.21 r + 0.72 g + 0.07b
     r,g,b = colorImage[:,:,0], colorImage[:,:,1], colorImage[:,:,2]
-    greyValues = (numpy.rint(numpy.add((0.21 * r),(0.72 * g),(0.07*b)))).astype(numpy.uint8)
+    greyValues = (numpy.rint(numpy.add((0.21 * r),(0.72 * g),(0.07*b)))).astype(numpy.double)
     # returning greyscale numpy array
     return greyValues
 

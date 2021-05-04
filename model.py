@@ -23,6 +23,9 @@ class Model():
     def evaluateModel(self, patch):
         pass
 
+    def getRGB(self, patch):
+        pass
+
     #evaluate gradient of the loss (which we precalculate) at vector x
     def loss_gradient(self, patch, actualrgb):
         pass
@@ -35,6 +38,11 @@ class Model():
     #assumes blackWhiteTraining and colorTraining are numpy arrays
     # alpha, beta, and delta are our learning rates for our 3 separate models
     def trainModel(self,blackWhiteTraining,colorTraining, alpha, beta, delta):
+        #scaling data down
+        #should divide each entry in array by the value (should divide all r,g, and b for colorTraining)
+        blackWhiteTraining /= 2500.0 #as in old features thing
+        colorTraining /= 255.0
+        
         #if the weights list is empty, initialize random small weights
         alpha = np.double(alpha)
         beta = np.double(beta)
@@ -91,9 +99,9 @@ class Model():
             # update w_{t+1}=w_t - alpha (GRADIENT(LOSS_i))(w_t)
             grad = self.loss_gradient(x, actual_rgb)
             #print("GRADIENT: "+str(grad))
-            redModifier = alpha* grad[0]
-            greenModifier = beta*grad[1]
-            blueModifier = delta*grad[2]
+            redModifier = alpha * grad[0]
+            greenModifier = beta * grad[1]
+            blueModifier = delta * grad[2]
             #print("RED MODIFIER: "+str(redModifier))
             #print("GREEN MODIFIER: "+str(greenModifier))
             #print("BLUE MODIFIER: "+str(blueModifier))
@@ -154,9 +162,9 @@ class Model():
             
             #check for convergence with the old weights - stop if change in weights < 0.1 (experiment with the number 0.1)
             '''
-            if (np.less(np.absolute(old_redWeights - self.redWeights), np.full(self.featureDim, 0.1)) and
-                np.less(np.absolute(old_greenWeights - self.greenWeights), np.full(self.featureDim, 0.1)) and
-                np.less(np.absolute(old_blueWeights - self.blueWeights), np.full(self.featureDim, 0.1))):
+            if (np.less(np.absolute(old_redWeights - self.redWeights), np.full(self.featureDim, 0.001)) and
+                np.less(np.absolute(old_greenWeights - self.greenWeights), np.full(self.featureDim, 0.001)) and
+                np.less(np.absolute(old_blueWeights - self.blueWeights), np.full(self.featureDim, 0.001))):
                 self.writeWeightsToFile()
                 break
             '''
@@ -273,9 +281,16 @@ class SigmoidModel(Model):
         red_dot = np.dot(self.redWeights, phi)
         green_dot = np.dot(self.greenWeights, phi)
         blue_dot = np.dot(self.blueWeights, phi)
-        return 255 * self.sigmoid(red_dot) , 255 * self.sigmoid(green_dot), 255 * self.sigmoid(blue_dot)
+        return self.sigmoid(red_dot) , self.sigmoid(green_dot), self.sigmoid(blue_dot)
+
+    def getRGB(self, patch, scaled = False):
+        if not scaled:
+            patch /= 2500
+        modelR, modelG, modelB = self.evaluateModel(patch)
+        return 255*modelR, 255*modelG, 255*modelB
 
     # computes loss for the training image
+    # data should be scaled down before calling this method
     def trainingLoss(self, blackWhiteTraining, colorImageTraining):
         # going through all the patches, computing, and returning the loss
         trainingWidth, trainingLength = np.shape(blackWhiteTraining)
@@ -297,14 +312,17 @@ class SigmoidModel(Model):
                          blackWhiteTraining[row - 1, col + 1],
                          blackWhiteTraining[row, col + 1],
                          blackWhiteTraining[row + 1, col + 1]]
+                '''
                 phi = self.features(patch)
                 # getting the pixel value
                 modelR= self.sigmoid(np.dot(self.redWeights,phi))
                 modelG = self.sigmoid(np.dot(self.greenWeights, phi))
                 modelB = self.sigmoid(np.dot(self.blueWeights, phi))
-                redLoss += (modelR - colorImageTraining[row, col, 0]/255) **2
-                greenLoss += (modelG - colorImageTraining[row, col ,1]/255) **2
-                blueLoss += (modelB - colorImageTraining[row,col,2]/255)**2
+                '''
+                modelR, modelG, modelB = self.evaluateModel(patch)
+                redLoss += (modelR - colorImageTraining[row, col, 0]) **2
+                greenLoss += (modelG - colorImageTraining[row, col ,1]) **2
+                blueLoss += (modelB - colorImageTraining[row,col,2])**2
         # returning loss for each model
         return (redLoss,greenLoss,blueLoss)
 
@@ -313,10 +331,10 @@ class SigmoidModel(Model):
     def loss_gradient(self, patch, actualrgb):
         # 510 (255 sigma(w dot features(patch)) - actualrgb[c]) sigma(w dot features(patch))(1 - sigma(w dot features(patch)))
         #modelR, modelG, modelB = modelrgb #Soumya: each is R(x), G(x), and B(x) resp, but loss is in terms of x and y
-        actualR, actualG, actualB = actualrgb/np.double(255)
-
-        phi = self.features(patch) #should probably return a numpy array
-
+        actualR, actualG, actualB = actualrgb
+        red_sigmoid, green_sigmoid, blue_sigmoid = self.evaluateModel(patch)
+        phi = self.features(patch)
+        '''
         #print("PATCH: "+str(patch))
         #print("PHI: "+str(phi))
 
@@ -324,6 +342,7 @@ class SigmoidModel(Model):
         red_sigmoid = self.sigmoid(np.dot(self.redWeights, phi))
         green_sigmoid = self.sigmoid(np.dot(self.redWeights, phi))
         blue_sigmoid = self.sigmoid(np.dot(self.redWeights, phi))
+        '''
 
         #print("RED SIGMOID: "+str(red_sigmoid))
         #print("GREEN SIGMOID: "+str(green_sigmoid))
@@ -344,14 +363,16 @@ class SigmoidModel(Model):
 
     # we can hardcode what features we want for now
     def features(self,patch):
-        
-        #np.append(patch,0.1)
-        features=[np.double(0.01)]
+        patch = np.append(patch,0.1)
+        return patch
+
+        '''
+        features=[np.double(1)]
         for value in patch:
             features.append(np.double(value)/np.double(2500))
 
         return np.array(features).astype(np.double)
-
+        '''
         # x^2 features
         '''
         phi =[np.double(0.01)]
