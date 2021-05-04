@@ -23,12 +23,8 @@ class Model():
     def evaluateModel(self, patch):
         pass
 
-
     #evaluate gradient of the loss (which we precalculate) at vector x
     def loss_gradient(self, patch, actualrgb):
-        pass
-
-    def loss(self,modelrgb, actualrgb):
         pass
 
     '''have to standardize what the shape of weights arrays are, I think its (featureDim,)
@@ -44,7 +40,6 @@ class Model():
         beta = np.double(beta)
         delta = np.double(delta)
         if len(self.redWeights) < 1:
-
             self.redWeights = np.random.rand(self.featureDim).astype(np.double)
             self.greenWeights = np.random.rand(self.featureDim).astype(np.double)
             self.blueWeights = np.random.rand(self.featureDim).astype(np.double)
@@ -75,11 +70,6 @@ class Model():
             #pixel chosen is at (row,col), then the patch is built around it
             row = random.randint(1, blackWhiteTraining.shape[0] - 2)
             col = random.randint(1, blackWhiteTraining.shape[1] - 2)
-            '''
-            x = np.array([blackWhiteTraining[row-1][col-1], blackWhiteTraining[row-1][col], blackWhiteTraining[row-1][col+1],
-                blackWhiteTraining[row][col-1], blackWhiteTraining[row][col], blackWhiteTraining[row][col+1],
-                blackWhiteTraining[row+1][col-1], blackWhiteTraining[row+1][col], blackWhiteTraining[row+1][col+1]])
-            '''
             x = np.array([blackWhiteTraining[row - 1][col - 1], #column1
                 blackWhiteTraining[row][col - 1],
                 blackWhiteTraining[row + 1][col - 1],
@@ -89,7 +79,6 @@ class Model():
                 blackWhiteTraining[row - 1][col + 1],#column3
                 blackWhiteTraining[row][col + 1],
                 blackWhiteTraining[row + 1][col + 1]])
-            #print(x)
 
             # (Soumya: I just realized we don't need the value for the loss gradient if we plug x and y into the loss function we have)
              #the rgb value the model predicts, corresponds to f(x)
@@ -294,11 +283,10 @@ class SigmoidModel(Model):
         greenLoss = 0
         blueLoss = 0
         for row in range(trainingWidth):
-            if row == 0 or row == trainingWidth - 1:
-                continue
             for col in range(trainingLength):
-                if col == 0 or col == trainingLength - 1:
+                if row == 0 or row == trainingWidth - 1 or col == 0 or col == trainingLength - 1:
                     continue
+
                 # this is a valid patch, we first compute the model rgb value
                 patch = [blackWhiteTraining[row - 1, col - 1],
                          blackWhiteTraining[row, col - 1],
@@ -356,9 +344,7 @@ class SigmoidModel(Model):
 
     # we can hardcode what features we want for now
     def features(self,patch):
-        # standard features
-            # appending 1 for the w_0 weight
-
+        
         #np.append(patch,0.1)
         features=[np.double(0.01)]
         for value in patch:
@@ -376,16 +362,6 @@ class SigmoidModel(Model):
         '''
 
         #my idea of the middle component mattering the most, then 1 level out mattering less, last level mattering the least)
-
-        pass
-
-    # just squared loss between returned rgb value from model and the actual rgb value
-    def loss(self,modelrgb, actualrgb):
-        modelR, modelG, modelB = modelrgb
-        actualR, actualG, actualB = actualrgb
-        return (modelR - actualR)**2, (modelG - actualG)**2, (modelB - actualB)**2
-
-
     
 
 
@@ -410,26 +386,5 @@ otherTestModel.loadWeightsFromFile("weights.txt")
 print(otherTestModel.redWeights)
 print(otherTestModel.greenWeights)
 print(otherTestModel.blueWeights)
-'''
-
-'''
-input X --> y
-
-
-
-class Model
-    weights for red
-    weights for green
-    weights for blue
-
-    evaluate()
-    getDerivative()
-
-
-'''
-
-'''
-features(patch1) dot weights
-
 '''
 
