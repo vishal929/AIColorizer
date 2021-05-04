@@ -22,8 +22,30 @@ if yesNo ==0:
     #atexit.register(model.Model.writeWeightsToFile, ourModel)
     ourModel.loadWeightsFromFile()
     # starting alpha with 0.001
-    ourModel.trainModel(bwImage[:,:int(bwLength/2)],colorImage[:,:int(cLength/2),:],0.000000001, 0.000000001, 0.000000001)
+    ourModel.trainModel(bwImage[:,:int(bwLength/2)],colorImage[:,:int(cLength/2),:],0.000001, 0.000001, 0.000001)
 else:
     # output image and compute loss
-    # coloring the entire image and returning the loss
-    pass
+    ourModel.loadWeightsFromFile()
+    result = np.zeros((bwWidth,bwLength,3),dtype="uint8")
+    for row in range(bwWidth):
+        if row==0 or row==bwWidth-1:
+            continue
+        for col in range(bwLength):
+            if col==0 or col==bwLength-1:
+                continue
+            #coloring the image from a patch
+            patch = np.array([bwImage[row - 1][col - 1], #column1
+                bwImage[row][col - 1],
+                bwImage[row + 1][col - 1],
+                bwImage[row - 1][col],#column2
+                bwImage[row][col],
+                bwImage[row + 1][col],
+                bwImage[row - 1][col + 1],#column3
+                bwImage[row][col + 1],
+                bwImage[row + 1][col + 1]])
+            red,blue,green=ourModel.evaluateModel(patch)
+            result[row,col,0] = red
+            result[row,col,1] = blue
+            result[row, col, 2] = green
+    # outputting color image
+    colorize.arrayToImage(result,"ImprovedResult.jfif")

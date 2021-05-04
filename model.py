@@ -22,7 +22,8 @@ class Model():
     #return r,g,b value model gets at patch
     def evaluateModel(self, patch):
         pass
-        
+
+
     #evaluate gradient of the loss (which we precalculate) at vector x
     def loss_gradient(self, patch, actualrgb):
         pass
@@ -39,14 +40,17 @@ class Model():
     # alpha, beta, and delta are our learning rates for our 3 separate models
     def trainModel(self,blackWhiteTraining,colorTraining, alpha, beta, delta):
         #if the weights list is empty, initialize random small weights
+        alpha = np.double(alpha)
+        beta = np.double(beta)
+        delta = np.double(delta)
         if len(self.redWeights) < 1:
 
-            #self.redWeights = np.random.rand(self.featureDim).astype(np.double) * 0.000001
-            #self.greenWeights = np.random.rand(self.featureDim).astype(np.double) * 0.000001
-            #self.blueWeights = np.random.rand(self.featureDim).astype(np.double) * 0.000001
-            self.redWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
-            self.greenWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
-            self.blueWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
+            self.redWeights = np.random.rand(self.featureDim).astype(np.double) * 0.001
+            self.greenWeights = np.random.rand(self.featureDim).astype(np.double) *0.001
+            self.blueWeights = np.random.rand(self.featureDim).astype(np.double) *0.001
+            #self.redWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
+            #self.greenWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
+            #self.blueWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
             #self.redWeights = np.array([0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001]).astype(np.double)
             #self.greenWeights = np.array([0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001]).astype(np.double)
             #self.blueWeights = np.array([0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001]).astype(np.double)
@@ -55,8 +59,9 @@ class Model():
             #print("STARTING BLUE: "+str(self.blueWeights))
 
         # every 1000 iterations, we will calculate the loss of our training data and stop if we are satisfied
-        threshold=50000
+        threshold=1000
         iterCount=0
+        learningRateDecay = np.double(0.9999)
 
         lastLoss = None
         while(True):
@@ -102,25 +107,30 @@ class Model():
             #print("RED MODIFIER: "+str(redModifier))
             #print("GREEN MODIFIER: "+str(greenModifier))
             #print("BLUE MODIFIER: "+str(blueModifier))
-            self.redWeights = old_redWeights - alpha * grad[0]
-            self.greenWeights = old_greenWeights - beta * grad[1]
-            self.blueWeights = old_blueWeights - delta * grad[2]
+            self.redWeights = old_redWeights - (alpha * grad[0])
+            self.greenWeights = old_greenWeights - (beta * grad[1])
+            self.blueWeights = old_blueWeights - (delta * grad[2])
 
             # just printing weights after each adjustment for convenience
-            #print("NEW WEIGHTS ----------- RGB ORDER ----------------")
-            #print("RED WEIGHTS")
-            #print(self.redWeights)
-            #print("GREEN WEIGHTS")
-            #print(self.greenWeights)
-            #print("BLUE WEIGHTS")
-            #print(self.blueWeights)
-            #print("END OF WEIGHTS -----------------------------------")
-
+            '''
+            print("NEW WEIGHTS ----------- RGB ORDER ----------------")
+            print("RED WEIGHTS")
+            print(self.redWeights)
+            print("GREEN WEIGHTS")
+            print(self.greenWeights)
+            print("BLUE WEIGHTS")
+            print(self.blueWeights)
+            print("END OF WEIGHTS -----------------------------------")
+            '''
+            alpha *= learningRateDecay
+            beta *= learningRateDecay
+            delta *= learningRateDecay
             iterCount +=1
             if iterCount == threshold:
                 # computing the loss
                 # computing loss and seeing if we are close now (maybe like 1000 ish loss is acceptable? we will see)
                 loss = self.trainingLoss(blackWhiteTraining,colorTraining)
+
                 print("GOT LOSS :"+str(loss))
                 print("RED WEIGHTS:")
                 print(self.redWeights)
@@ -128,6 +138,7 @@ class Model():
                 print(self.greenWeights)
                 print("BLUE WEIGHTS:")
                 print(self.blueWeights)
+
                 if lastLoss is None:
                     lastLoss = loss
                     self.writeWeightsToFile(0)
@@ -321,10 +332,18 @@ class SigmoidModel(Model):
         actualR, actualG, actualB = actualrgb
 
         phi = self.features(patch) #should probably return a numpy array
+
+        #print("PATCH: "+str(patch))
+        #print("PHI: "+str(phi))
+
         #each sigmoid term is sigma(w dot features(patch))
         red_sigmoid = self.sigmoid(np.dot(self.redWeights, phi))
         green_sigmoid = self.sigmoid(np.dot(self.redWeights, phi))
         blue_sigmoid = self.sigmoid(np.dot(self.redWeights, phi))
+
+        #print("RED SIGMOID: "+str(red_sigmoid))
+        #print("GREEN SIGMOID: "+str(green_sigmoid))
+        #print("BLUE SIGMOID: "+str(blue_sigmoid))
 
         #print("MODEL RED: "+str(255*red_sigmoid))
         #print("MODEL GREEN: "+str(255*green_sigmoid))
@@ -333,6 +352,9 @@ class SigmoidModel(Model):
         redGradient = (510 * (255 * red_sigmoid - actualR) * red_sigmoid * (1-red_sigmoid)) * phi
         greenGradient = (510 * (255 * green_sigmoid - actualG) * green_sigmoid * (1-green_sigmoid)) * phi
         blueGradient = (510 * (255 * blue_sigmoid - actualB) * blue_sigmoid * (1-blue_sigmoid)) * phi
+        #print("RED GRADIENT: "+str(redGradient))
+        #print("green Gradient: "+str(greenGradient))
+        #print("blue gradient: "+str(blueGradient))
 
         return redGradient, greenGradient, blueGradient
 
@@ -340,20 +362,23 @@ class SigmoidModel(Model):
     def features(self,patch):
         # standard features
             # appending 1 for the w_0 weight
-        np.append(patch,1)
-        features=[np.double(1)]
+
+        #np.append(patch,0.1)
+        features=[np.double(0.01)]
         for value in patch:
-            features.append(value)
+            features.append(np.double(value)/np.double(2500))
 
         return np.array(features).astype(np.double)
+
         # x^2 features
         '''
-        phi =[1]
+        phi =[np.double(0.01)]
         for greyValue in patch:
-            phi.append(greyValue)
-            phi.append(greValue**2)
-        return np.array(phi)
+            phi.append(np.double(greyValue/1000))
+            phi.append(np.double((greyValue/1000)**2))
+        return np.array(phi).astype(np.double)
         '''
+
         #my idea of the middle component mattering the most, then 1 level out mattering less, last level mattering the least)
 
         pass
