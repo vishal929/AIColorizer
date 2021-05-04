@@ -40,15 +40,15 @@ class Model():
         #if the weights list is empty, initialize random small weights
         if len(self.redWeights) < 1:
 
-            self.redWeights = np.random.rand(self.featureDim)*0.001
-            self.greenWeights = np.random.rand(self.featureDim)*0.001
-            self.blueWeights = np.random.rand(self.featureDim)*0.001
-            self.redWeights = np.array([-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5]).astype(np.double)
-            self.greenWeights = np.array([-0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5]).astype(np.double)
-            self.blueWeights = np.array([-0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5]).astype(np.double)
-            print("STARTING RED: "+str(self.redWeights))
-            print("STARTING GREEN: "+str(self.greenWeights))
-            print("STARTING BLUE: "+str(self.blueWeights))
+            self.redWeights = np.random.rand(self.featureDim).astype(np.double) * 0.000001
+            self.greenWeights = np.random.rand(self.featureDim).astype(np.double) * 0.000001
+            self.blueWeights = np.random.rand(self.featureDim).astype(np.double) * 0.000001
+            #self.redWeights = np.array([0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001]).astype(np.double)
+            #self.greenWeights = np.array([0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001]).astype(np.double)
+            #self.blueWeights = np.array([0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001]).astype(np.double)
+            #print("STARTING RED: "+str(self.redWeights))
+            #print("STARTING GREEN: "+str(self.greenWeights))
+            #print("STARTING BLUE: "+str(self.blueWeights))
 
         # every 1000 iterations, we will calculate the loss of our training data and stop if we are satisfied
         threshold=1000
@@ -78,41 +78,46 @@ class Model():
                 blackWhiteTraining[row - 1][col + 1],#column3
                 blackWhiteTraining[row][col + 1],
                 blackWhiteTraining[row + 1][col + 1]])
+            #print(x)
 
             # (Soumya: I just realized we don't need the value for the loss gradient if we plug x and y into the loss function we have)
              #the rgb value the model predicts, corresponds to f(x)
             actual_rgb = colorTraining[row][col] #the rgb value from the data, corresponds to y
+            #print("x"+str(x))
+            #print("red: "+str(self.redWeights))
+            #print(np.dot(self.redWeights,self.features(x)))
+            #print(np.dot(self.greenWeights,self.features(x)))
 
             # update w_{t+1}=w_t - alpha (GRADIENT(LOSS_i))(w_t)
             grad = self.loss_gradient(x, actual_rgb)
-            print("GRADIENT: "+str(grad))
+            #print("GRADIENT: "+str(grad))
             redModifier = alpha* grad[0]
             greenModifier = alpha*grad[1]
             blueModifier = alpha*grad[2]
-            print("RED MODIFIER: "+str(redModifier))
-            print("GREEN MODIFIER: "+str(greenModifier))
-            print("BLUE MODIFIER: "+str(blueModifier))
-            self.redWeights = self.redWeights - alpha * grad[0]
-            self.greenWeights = self.greenWeights - alpha * grad[1]
-            self.blueWeights = self.blueWeights - alpha * grad[2]
+            #print("RED MODIFIER: "+str(redModifier))
+            #print("GREEN MODIFIER: "+str(greenModifier))
+            #print("BLUE MODIFIER: "+str(blueModifier))
+            self.redWeights = old_redWeights - alpha * grad[0]
+            self.greenWeights = old_greenWeights - alpha * grad[1]
+            self.blueWeights = old_blueWeights - alpha * grad[2]
 
             # just printing weights after each adjustment for convenience
-            print("NEW WEIGHTS ----------- RGB ORDER ----------------")
-            print("RED WEIGHTS")
-            print(self.redWeights)
-            print("GREEN WEIGHTS")
-            print(self.greenWeights)
-            print("BLUE WEIGHTS")
-            print(self.blueWeights)
-            print("END OF WEIGHTS -----------------------------------")
+            #print("NEW WEIGHTS ----------- RGB ORDER ----------------")
+            #print("RED WEIGHTS")
+            #print(self.redWeights)
+            #print("GREEN WEIGHTS")
+            #print(self.greenWeights)
+            #print("BLUE WEIGHTS")
+            #print(self.blueWeights)
+            #print("END OF WEIGHTS -----------------------------------")
 
             iterCount +=1
             if iterCount == threshold:
                 # computing the loss
-                # computing loss and seeing if we are close now (maybe like 100 ish loss is acceptable? we will see)
+                # computing loss and seeing if we are close now (maybe like 1000 ish loss is acceptable? we will see)
                 loss = self.trainingLoss(blackWhiteTraining,colorTraining)
                 print("GOT LOSS :"+str(loss))
-                if loss[0] <= 100 and loss[1]<=100 and loss[2]<=100:
+                if loss[0] <= 1000 and loss[1]<=1000 and loss[2]<=1000:
                     # this is close enough, for now
                     print("DONE TRAINING")
                     self.writeWeightsToFile()
@@ -210,7 +215,9 @@ class Model():
 class SigmoidModel(Model):
 
     def sigmoid(self,z):
-        return 1 / (1 + np.exp(-z))
+        res= np.double(1.) / (np.double(1.) + np.double(np.exp(-z)))
+        #print("SIGMOID RESULT:" + str(res)+ " with input: "+str(z))
+        return res
 
     def evaluateModel(self, patch):
         #return r,g,b value model gets at patch
@@ -268,13 +275,13 @@ class SigmoidModel(Model):
         green_sigmoid = self.sigmoid(np.dot(self.redWeights, phi))
         blue_sigmoid = self.sigmoid(np.dot(self.redWeights, phi))
 
-        print("MODEL RED: "+str(255*red_sigmoid))
-        print("MODEL GREEN: "+str(255*green_sigmoid))
-        print("MODEL BLUE: "+str(255*blue_sigmoid))
+        #print("MODEL RED: "+str(255*red_sigmoid))
+        #print("MODEL GREEN: "+str(255*green_sigmoid))
+        #print("MODEL BLUE: "+str(255*blue_sigmoid))
 
-        redGradient = 510 * (255 * red_sigmoid - actualR) * red_sigmoid * (1-red_sigmoid) * phi
-        greenGradient = 510 * (255 * green_sigmoid - actualG) * green_sigmoid * (1-green_sigmoid) * phi
-        blueGradient = 510 * (255 * blue_sigmoid - actualB) * blue_sigmoid * (1-blue_sigmoid) * phi
+        redGradient = (510 * (255 * red_sigmoid - actualR) * red_sigmoid * (1-red_sigmoid)) * phi
+        greenGradient = (510 * (255 * green_sigmoid - actualG) * green_sigmoid * (1-green_sigmoid)) * phi
+        blueGradient = (510 * (255 * blue_sigmoid - actualB) * blue_sigmoid * (1-blue_sigmoid)) * phi
 
         return redGradient, greenGradient, blueGradient
 
@@ -283,11 +290,11 @@ class SigmoidModel(Model):
         # standard features
             # appending 1 for the w_0 weight
         np.append(patch,1)
-        features=[1]
+        features=[np.double(1)]
         for value in patch:
             features.append(value)
 
-        return np.array(features)
+        return np.array(features).astype(np.double)
         # x^2 features
         '''
         phi =[1]
