@@ -45,9 +45,9 @@ class Model():
         delta = np.double(delta)
         if len(self.redWeights) < 1:
 
-            self.redWeights = np.random.rand(self.featureDim).astype(np.double) * 0.001
-            self.greenWeights = np.random.rand(self.featureDim).astype(np.double) *0.001
-            self.blueWeights = np.random.rand(self.featureDim).astype(np.double) *0.001
+            self.redWeights = np.random.rand(self.featureDim).astype(np.double)
+            self.greenWeights = np.random.rand(self.featureDim).astype(np.double)
+            self.blueWeights = np.random.rand(self.featureDim).astype(np.double)
             #self.redWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
             #self.greenWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
             #self.blueWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
@@ -63,7 +63,8 @@ class Model():
         iterCount=0
         learningRateDecay = np.double(0.9999)
 
-        lastLoss = None
+        #initial loss
+        lastLoss = self.trainingLoss(blackWhiteTraining,colorTraining)
         while(True):
             #in order to check for convergence, maybe theres a better way to do this than to make copies
             old_redWeights = np.copy(self.redWeights)
@@ -139,26 +140,21 @@ class Model():
                 print("BLUE WEIGHTS:")
                 print(self.blueWeights)
 
-                if lastLoss is None:
-                    lastLoss = loss
+
+                if loss[0] <lastLoss[0]:
+                    # writing red weights
                     self.writeWeightsToFile(0)
+                    lastLoss = loss[0], lastLoss[1], lastLoss[2]
+
+                if loss[1]<lastLoss[1]:
+                    # writing green weights
                     self.writeWeightsToFile(1)
+                    lastLoss = lastLoss[0], loss[1], lastLoss[2]
+
+                if loss[2] < lastLoss[2]:
+                    # writing blue weights
                     self.writeWeightsToFile(2)
-                else:
-                    if loss[0] <lastLoss[0]:
-                        # writing red weights
-                        self.writeWeightsToFile(0)
-                        lastLoss = loss[0], lastLoss[1], lastLoss[2]
-
-                    if loss[1]<lastLoss[1]:
-                        # writing green weights
-                        self.writeWeightsToFile(1)
-                        lastLoss = lastLoss[0], loss[1], lastLoss[2]
-
-                    if loss[2] < lastLoss[2]:
-                        # writing blue weights
-                        self.writeWeightsToFile(2)
-                        lastLoss = lastLoss[0], lastLoss[1], loss[2]
+                    lastLoss = lastLoss[0], lastLoss[1], loss[2]
 
                 # resetting iterCount
                 iterCount=0
@@ -315,12 +311,12 @@ class SigmoidModel(Model):
                          blackWhiteTraining[row + 1, col + 1]]
                 phi = self.features(patch)
                 # getting the pixel value
-                modelR= 255 * self.sigmoid(np.dot(self.redWeights,phi))
-                modelG = 255 * self.sigmoid(np.dot(self.greenWeights, phi))
-                modelB = 255 * self.sigmoid(np.dot(self.blueWeights, phi))
-                redLoss += (modelR - colorImageTraining[row, col, 0]) **2
-                greenLoss += (modelG - colorImageTraining[row, col ,1]) **2
-                blueLoss += (modelB - colorImageTraining[row,col,2])**2
+                modelR= self.sigmoid(np.dot(self.redWeights,phi))
+                modelG = self.sigmoid(np.dot(self.greenWeights, phi))
+                modelB = self.sigmoid(np.dot(self.blueWeights, phi))
+                redLoss += (modelR - colorImageTraining[row, col, 0]/255) **2
+                greenLoss += (modelG - colorImageTraining[row, col ,1]/255) **2
+                blueLoss += (modelB - colorImageTraining[row,col,2]/255)**2
         # returning loss for each model
         return (redLoss,greenLoss,blueLoss)
 
@@ -329,7 +325,7 @@ class SigmoidModel(Model):
     def loss_gradient(self, patch, actualrgb):
         # 510 (255 sigma(w dot features(patch)) - actualrgb[c]) sigma(w dot features(patch))(1 - sigma(w dot features(patch)))
         #modelR, modelG, modelB = modelrgb #Soumya: each is R(x), G(x), and B(x) resp, but loss is in terms of x and y
-        actualR, actualG, actualB = actualrgb
+        actualR, actualG, actualB = actualrgb/np.double(255)
 
         phi = self.features(patch) #should probably return a numpy array
 
@@ -349,9 +345,9 @@ class SigmoidModel(Model):
         #print("MODEL GREEN: "+str(255*green_sigmoid))
         #print("MODEL BLUE: "+str(255*blue_sigmoid))
 
-        redGradient = (510 * (255 * red_sigmoid - actualR) * red_sigmoid * (1-red_sigmoid)) * phi
-        greenGradient = (510 * (255 * green_sigmoid - actualG) * green_sigmoid * (1-green_sigmoid)) * phi
-        blueGradient = (510 * (255 * blue_sigmoid - actualB) * blue_sigmoid * (1-blue_sigmoid)) * phi
+        redGradient = 2 * ( red_sigmoid - actualR) * red_sigmoid * (1-red_sigmoid) * phi
+        greenGradient = 2 * ( green_sigmoid - actualG) * (green_sigmoid * (1-green_sigmoid)) * phi
+        blueGradient = 2* (blue_sigmoid - actualB) * (blue_sigmoid * (1-blue_sigmoid)) * phi
         #print("RED GRADIENT: "+str(redGradient))
         #print("green Gradient: "+str(greenGradient))
         #print("blue gradient: "+str(blueGradient))
