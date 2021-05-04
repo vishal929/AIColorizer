@@ -19,10 +19,10 @@ bwWidth, bwLength = np.shape(bwImage)
 yesNo = int(input("Please enter 0 if you want to train the model and 1 if you want to test the output and compute the loss!"))
 if yesNo ==0:
     # train
-    atexit.register(model.Model.writeWeightsToFile, ourModel)
+    #atexit.register(model.Model.writeWeightsToFile, ourModel)
     ourModel.loadWeightsFromFile()
     # starting alpha with 0.001
-    ourModel.trainModel(bwImage[:,:int(bwLength/2)],colorImage[:,:int(cLength/2),:],0.000001)
+    ourModel.trainModel(bwImage[:,:int(bwLength/2)],colorImage[:,:int(cLength/2),:],0.000000001, 0.000000001, 0.000000001)
 else:
     # output image and compute loss
     # coloring the entire image and returning the loss

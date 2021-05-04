@@ -36,13 +36,17 @@ class Model():
     #would do red, green, blue
     #alpha stepsize
     #assumes blackWhiteTraining and colorTraining are numpy arrays
-    def trainModel(self,blackWhiteTraining,colorTraining, alpha):
+    # alpha, beta, and delta are our learning rates for our 3 separate models
+    def trainModel(self,blackWhiteTraining,colorTraining, alpha, beta, delta):
         #if the weights list is empty, initialize random small weights
         if len(self.redWeights) < 1:
 
-            self.redWeights = np.random.rand(self.featureDim).astype(np.double) * 0.000001
-            self.greenWeights = np.random.rand(self.featureDim).astype(np.double) * 0.000001
-            self.blueWeights = np.random.rand(self.featureDim).astype(np.double) * 0.000001
+            #self.redWeights = np.random.rand(self.featureDim).astype(np.double) * 0.000001
+            #self.greenWeights = np.random.rand(self.featureDim).astype(np.double) * 0.000001
+            #self.blueWeights = np.random.rand(self.featureDim).astype(np.double) * 0.000001
+            self.redWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
+            self.greenWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
+            self.blueWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
             #self.redWeights = np.array([0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001]).astype(np.double)
             #self.greenWeights = np.array([0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001]).astype(np.double)
             #self.blueWeights = np.array([0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001]).astype(np.double)
@@ -51,9 +55,10 @@ class Model():
             #print("STARTING BLUE: "+str(self.blueWeights))
 
         # every 1000 iterations, we will calculate the loss of our training data and stop if we are satisfied
-        threshold=1000
+        threshold=50000
         iterCount=0
 
+        lastLoss = None
         while(True):
             #in order to check for convergence, maybe theres a better way to do this than to make copies
             old_redWeights = np.copy(self.redWeights)
@@ -92,14 +97,14 @@ class Model():
             grad = self.loss_gradient(x, actual_rgb)
             #print("GRADIENT: "+str(grad))
             redModifier = alpha* grad[0]
-            greenModifier = alpha*grad[1]
-            blueModifier = alpha*grad[2]
+            greenModifier = beta*grad[1]
+            blueModifier = delta*grad[2]
             #print("RED MODIFIER: "+str(redModifier))
             #print("GREEN MODIFIER: "+str(greenModifier))
             #print("BLUE MODIFIER: "+str(blueModifier))
             self.redWeights = old_redWeights - alpha * grad[0]
-            self.greenWeights = old_greenWeights - alpha * grad[1]
-            self.blueWeights = old_blueWeights - alpha * grad[2]
+            self.greenWeights = old_greenWeights - beta * grad[1]
+            self.blueWeights = old_blueWeights - delta * grad[2]
 
             # just printing weights after each adjustment for convenience
             #print("NEW WEIGHTS ----------- RGB ORDER ----------------")
@@ -117,11 +122,33 @@ class Model():
                 # computing loss and seeing if we are close now (maybe like 1000 ish loss is acceptable? we will see)
                 loss = self.trainingLoss(blackWhiteTraining,colorTraining)
                 print("GOT LOSS :"+str(loss))
-                if loss[0] <= 1000 and loss[1]<=1000 and loss[2]<=1000:
-                    # this is close enough, for now
-                    print("DONE TRAINING")
-                    self.writeWeightsToFile()
-                    break
+                print("RED WEIGHTS:")
+                print(self.redWeights)
+                print("GREEN WEIGHTS:")
+                print(self.greenWeights)
+                print("BLUE WEIGHTS:")
+                print(self.blueWeights)
+                if lastLoss is None:
+                    lastLoss = loss
+                    self.writeWeightsToFile(0)
+                    self.writeWeightsToFile(1)
+                    self.writeWeightsToFile(2)
+                else:
+                    if loss[0] <lastLoss[0]:
+                        # writing red weights
+                        self.writeWeightsToFile(0)
+                        lastLoss = loss[0], lastLoss[1], lastLoss[2]
+
+                    if loss[1]<lastLoss[1]:
+                        # writing green weights
+                        self.writeWeightsToFile(1)
+                        lastLoss = lastLoss[0], loss[1], lastLoss[2]
+
+                    if loss[2] < lastLoss[2]:
+                        # writing blue weights
+                        self.writeWeightsToFile(2)
+                        lastLoss = lastLoss[0], lastLoss[1], loss[2]
+
                 # resetting iterCount
                 iterCount=0
             #check for keyword "stop" from user, if this happens then call writetofile
@@ -157,46 +184,70 @@ class Model():
     def loadWeightsFromFile(self):
         # idea, we split the output into lines, append each number into its respective weights vector
         try:
-            file = open("weights.txt", 'r')
+            file = open("redWeights.txt", 'r')
+            actualRedWeights=[]
+            lines = file.read().splitlines()
+            stringRedWeights = lines[0].split()
+            for num in stringRedWeights:
+                actualRedWeights.append(np.double(num))
+            self.redWeights = actualRedWeights
+            file.close()
         except :
-            return False
-        lines = file.read().splitlines()
-        stringRedWeights = lines[0].split()
-        #print(stringRedWeights)
-        actualRedWeights=[]
-        stringGreenWeights = lines[1].split()
-        #print(stringGreenWeights)
-        actualGreenWeights=[]
-        stringBlueWeights=lines[2].split()
-        #print(stringBlueWeights)
-        actualBlueWeights=[]
-        for i in range(len(stringRedWeights)):
-            actualRedWeights.append(np.double(stringRedWeights[i]))
-            actualGreenWeights.append(np.double(stringGreenWeights[i]))
-            actualBlueWeights.append(np.double(stringBlueWeights[i]))
-        self.redWeights=actualRedWeights
-        self.greenWeights=actualGreenWeights
-        self.blueWeights=actualBlueWeights
-        file.close()
-        return True
+            pass
+
+        try:
+            file = open("greenWeights.txt", 'r')
+            lines = file.read().splitlines()
+            actualGreenWeights = []
+            stringGreenWeights = lines[0].split()
+            for num in stringGreenWeights:
+                actualGreenWeights.append(np.double(num))
+            self.greenWeights = actualGreenWeights
+            file.close()
+        except:
+            pass
+
+        try :
+            file = open("blueWeights.txt", 'r')
+            lines = file.read().splitlines()
+            actualBlueWeights = []
+            stringBlueWeights = lines[0].split()
+            for num in stringBlueWeights:
+                actualBlueWeights.append(np.double(num))
+            self.blueWeights = actualBlueWeights
+            file.close()
+        except:
+            pass
 
     
-    def writeWeightsToFile(self):
+    def writeWeightsToFile(self,rgb):
         # first clearing all the weights currently in the txt file
-        file = open("weights.txt", 'w')
-        file.truncate(0)
-        # now writing our numbers to the file with newlines separating
-        for reds in self.redWeights:
-            file.write(str(reds)+" ")
-        file.write("\n")
-        for greens in self.greenWeights:
-            file.write(str(greens)+" ")
-        file.write("\n")
-        for blues in self.blueWeights:
-            file.write(str(blues)+" ")
-        file.write("\n")
+        if rgb==0:
+            # write red weights
+            file = open("redWeights.txt", 'w')
+            file.truncate(0)
+            for reds in self.redWeights:
+                file.write(str(reds) + " ")
+            file.write("\n")
+            print("WROTE RED WEIGHTS TO redWeights.txt")
+        elif rgb==1:
+            # write green weights
+            file = open("greenWeights.txt", 'w')
+            file.truncate(0)
+            for greens in self.greenWeights:
+                file.write(str(greens) + " ")
+            file.write("\n")
+            print("WROTE GREEN WEIGHTS TO greenWeights.txt")
+        else:
+            # write blue weights
+            file = open("blueWeights.txt", 'w')
+            file.truncate(0)
+            for blues in self.blueWeights:
+                file.write(str(blues) + " ")
+            file.write("\n")
+            print("WROTE BLUE WEIGHTS TO blueWeights.txt")
+
         file.close()
-        print("WROTE WEIGHTS TO WEIGHTS.txt")
 
 
 # PATCH IS ASSUMING THE FOLLOWING FORMAT FOR EACH PATCH (CONSISTENT WITH COLORIZE.py format):
