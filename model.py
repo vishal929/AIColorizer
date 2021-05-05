@@ -12,7 +12,7 @@ class Model():
     def __init__(self, id, featurePtr, featureDim):
         # standard featureDim is 10 --> (1,x_1,x_2,x_3,x_4,x_5,x_6,x_7,x_8,x_9)
         self.features = featurePtr
-        self.featureDim = 10
+        self.featureDim = featureDim
         self.redWeights=[]
         self.greenWeights=[]
         self.blueWeights=[]
@@ -55,9 +55,9 @@ class Model():
         delta = np.double(delta)
         if len(self.redWeights) < 1:
             self.redWeights = np.random.rand(self.featureDim).astype(np.double)
-        if len(self.blueWeights)<1:
-            self.greenWeights = np.random.rand(self.featureDim).astype(np.double)
         if len(self.greenWeights)<1:
+            self.greenWeights = np.random.rand(self.featureDim).astype(np.double)
+        if len(self.blueWeights)<1:
             self.blueWeights = np.random.rand(self.featureDim).astype(np.double)
             #self.redWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
             #self.greenWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
@@ -76,6 +76,7 @@ class Model():
 
         #initial loss
         lastLoss = self.trainingLoss(blackWhiteTraining,colorTraining)
+        print("INITIAL LOSS:"+str(lastLoss))
         while(True):
             #in order to check for convergence, maybe theres a better way to do this than to make copies
             old_redWeights = np.copy(self.redWeights)
