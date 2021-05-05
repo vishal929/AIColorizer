@@ -54,9 +54,11 @@ class Model():
         beta = np.double(beta)
         delta = np.double(delta)
         if len(self.redWeights) < 1:
-            self.redWeights = np.random.rand(self.featureDim).astype(np.double)*0.0001
-            self.greenWeights = np.random.rand(self.featureDim).astype(np.double)*0.0001
-            self.blueWeights = np.random.rand(self.featureDim).astype(np.double)*0.0001
+            self.redWeights = np.random.rand(self.featureDim).astype(np.double)
+        if len(self.blueWeights)<1:
+            self.greenWeights = np.random.rand(self.featureDim).astype(np.double)
+        if len(self.greenWeights)<1:
+            self.blueWeights = np.random.rand(self.featureDim).astype(np.double)
             #self.redWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
             #self.greenWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
             #self.blueWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
