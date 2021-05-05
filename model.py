@@ -8,11 +8,14 @@ import math
 import signal
 
 class Model():
-    # standard featureDim is 10 --> (1,x_1,x_2,x_3,x_4,x_5,x_6,x_7,x_8,x_9)
-    featureDim = 10
-    redWeights=[]
-    greenWeights=[]
-    blueWeights=[]
+    
+    def __init__(self, id):
+        # standard featureDim is 10 --> (1,x_1,x_2,x_3,x_4,x_5,x_6,x_7,x_8,x_9)
+        self.featureDim = 10
+        self.redWeights=[]
+        self.greenWeights=[]
+        self.blueWeights=[]
+        self.id = id
 
     #for now this is equivalent to saying there are no features
     def features(self,patch):
@@ -48,9 +51,9 @@ class Model():
         beta = np.double(beta)
         delta = np.double(delta)
         if len(self.redWeights) < 1:
-            self.redWeights = np.random.rand(self.featureDim).astype(np.double)
-            self.greenWeights = np.random.rand(self.featureDim).astype(np.double)
-            self.blueWeights = np.random.rand(self.featureDim).astype(np.double)
+            self.redWeights = np.random.rand(self.featureDim).astype(np.double)*0.0001
+            self.greenWeights = np.random.rand(self.featureDim).astype(np.double)*0.0001
+            self.blueWeights = np.random.rand(self.featureDim).astype(np.double)*0.0001
             #self.redWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
             #self.greenWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
             #self.blueWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
@@ -184,11 +187,10 @@ class Model():
         # redWeight_1 redWeight_2 ...
         # gWeight_1 gWeight_2 ...
         # bWeight_1 bWeight_2 ...
-    #returns the weight vectors as a tuple (redWeights, greenWeights, blueWeights)
     def loadWeightsFromFile(self):
         # idea, we split the output into lines, append each number into its respective weights vector
         try:
-            file = open("redWeights.txt", 'r')
+            file = open("redWeights{id}.txt".format(id = self.id), 'r')
             actualRedWeights=[]
             lines = file.read().splitlines()
             stringRedWeights = lines[0].split()
@@ -200,7 +202,7 @@ class Model():
             pass
 
         try:
-            file = open("greenWeights.txt", 'r')
+            file = open("greenWeights{id}.txt".format(id = self.id), 'r')
             lines = file.read().splitlines()
             actualGreenWeights = []
             stringGreenWeights = lines[0].split()
@@ -212,7 +214,7 @@ class Model():
             pass
 
         try :
-            file = open("blueWeights.txt", 'r')
+            file = open("blueWeights{id}.txt".format(id = self.id), 'r')
             lines = file.read().splitlines()
             actualBlueWeights = []
             stringBlueWeights = lines[0].split()
@@ -228,7 +230,7 @@ class Model():
         # first clearing all the weights currently in the txt file
         if rgb==0:
             # write red weights
-            file = open("redWeights.txt", 'w')
+            file = open("redWeights{id}.txt".format(id = self.id), 'w')
             file.truncate(0)
             for reds in self.redWeights:
                 file.write(str(reds) + " ")
@@ -236,7 +238,7 @@ class Model():
             print("WROTE RED WEIGHTS TO redWeights.txt")
         elif rgb==1:
             # write green weights
-            file = open("greenWeights.txt", 'w')
+            file = open("greenWeights{id}.txt".format(id = self.id), 'w')
             file.truncate(0)
             for greens in self.greenWeights:
                 file.write(str(greens) + " ")
@@ -244,7 +246,7 @@ class Model():
             print("WROTE GREEN WEIGHTS TO greenWeights.txt")
         else:
             # write blue weights
-            file = open("blueWeights.txt", 'w')
+            file = open("blueWeights{id}.txt".format(id = self.id), 'w')
             file.truncate(0)
             for blues in self.blueWeights:
                 file.write(str(blues) + " ")
@@ -268,6 +270,9 @@ class Model():
     blackWhiteTraining[z + 1, y + 1]]
     '''
 class SigmoidModel(Model):
+
+    def __init__(self, id):
+        super().__init__(id)
 
     def sigmoid(self,z):
         res= np.double(1.) / (np.double(1.) + np.double(np.exp(-z)))
@@ -354,7 +359,7 @@ class SigmoidModel(Model):
 
         redGradient = 2 * ( red_sigmoid - actualR) * red_sigmoid * (1-red_sigmoid) * phi
         greenGradient = 2 * ( green_sigmoid - actualG) * (green_sigmoid * (1-green_sigmoid)) * phi
-        blueGradient = 2* (blue_sigmoid - actualB) * (blue_sigmoid * (1-blue_sigmoid)) * phi
+        blueGradient = 2 * (blue_sigmoid - actualB) * (blue_sigmoid * (1-blue_sigmoid)) * phi
         #print("RED GRADIENT: "+str(redGradient))
         #print("green Gradient: "+str(greenGradient))
         #print("blue gradient: "+str(blueGradient))

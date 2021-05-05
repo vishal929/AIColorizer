@@ -8,7 +8,7 @@ import colorize
 
 # setup for training/evaluation
 
-ourModel = model.SigmoidModel()
+ourModel = model.SigmoidModel(1)
 # cropping color image to the same 512x512 crop as in colorize
 colorImage = (colorize.imageToArray("colorImage.jfif"))[500:500+512,900:900+512,:]
 cWidth, cLength, cDepth = np.shape(colorImage)
@@ -22,7 +22,7 @@ if yesNo ==0:
     #atexit.register(model.Model.writeWeightsToFile, ourModel)
     ourModel.loadWeightsFromFile()
     # starting alpha with 0.001
-    ourModel.trainModel(bwImage[:,:int(bwLength/2)],colorImage[:,:int(cLength/2),:],0.01, 0.0001, 0.0001)
+    ourModel.trainModel(bwImage[:,:int(bwLength/2)],colorImage[:,:int(cLength/2),:],0.01, 0.000001, 0.000001)
 else:
     # output image and compute loss
     ourModel.loadWeightsFromFile()
@@ -43,7 +43,7 @@ else:
                 bwImage[row - 1][col + 1],#column3
                 bwImage[row][col + 1],
                 bwImage[row + 1][col + 1]])
-            red, blue, green=ourModel.getRGB(patch)
+            red, green, blue=ourModel.getRGB(patch)
             result[row, col, 0] = red
             result[row, col, 1] = green
             result[row, col, 2] = blue
