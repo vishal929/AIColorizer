@@ -9,18 +9,21 @@ import signal
 
 class Model():
     
-    def __init__(self, id):
+    def __init__(self, id, featurePtr, featureDim):
         # standard featureDim is 10 --> (1,x_1,x_2,x_3,x_4,x_5,x_6,x_7,x_8,x_9)
+        self.features = featurePtr
         self.featureDim = 10
         self.redWeights=[]
         self.greenWeights=[]
         self.blueWeights=[]
         self.id = id
 
+    '''
     #for now this is equivalent to saying there are no features
     def features(self,patch):
         np.append(patch,1)
         return patch
+    '''
 
     #return r,g,b value model gets at patch
     def evaluateModel(self, patch):
@@ -271,8 +274,8 @@ class Model():
     '''
 class SigmoidModel(Model):
 
-    def __init__(self, id):
-        super().__init__(id)
+    def __init__(self, id, featurePtr, featureDim):
+        super().__init__(id, featurePtr, featureDim)
 
     def sigmoid(self,z):
         res= np.double(1.) / (np.double(1.) + np.double(np.exp(-z)))
@@ -366,29 +369,29 @@ class SigmoidModel(Model):
 
         return redGradient, greenGradient, blueGradient
 
+    '''
     # we can hardcode what features we want for now
     def features(self,patch):
         patch = np.append(patch,0.1)
         return patch
 
-        '''
+        
         features=[np.double(1)]
         for value in patch:
             features.append(np.double(value)/np.double(2500))
 
         return np.array(features).astype(np.double)
-        '''
+        
         # x^2 features
-        '''
         phi =[np.double(0.01)]
         for greyValue in patch:
             phi.append(np.double(greyValue/1000))
             phi.append(np.double((greyValue/1000)**2))
         return np.array(phi).astype(np.double)
-        '''
+      
 
         #my idea of the middle component mattering the most, then 1 level out mattering less, last level mattering the least)
-    
+    '''
 
 
 # testing getting weights and writing weights to a file

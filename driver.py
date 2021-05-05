@@ -8,7 +8,12 @@ import colorize
 
 # setup for training/evaluation
 
-ourModel = model.SigmoidModel(1)
+#can specify different features for different models, driver.py's responsibility to make sure dim matches
+def featurePtr(patch):
+    patch = np.append(patch,0.1)
+    return patch
+
+ourModel = model.SigmoidModel(1, featurePtr, 10) 
 # cropping color image to the same 512x512 crop as in colorize
 colorImage = (colorize.imageToArray("colorImage.jfif"))[500:500+512,900:900+512,:]
 cWidth, cLength, cDepth = np.shape(colorImage)
