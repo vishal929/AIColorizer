@@ -7,13 +7,18 @@ import model
 import colorize
 
 # setup for training/evaluation
-
+dimWanted=20
 #can specify different features for different models, driver.py's responsibility to make sure dim matches
 def featurePtr(patch):
-    patch = np.append(patch,0.1)
-    return patch
+    features=[np.double(0.1)]
+    for num in patch:
+        for dim in range(1,dimWanted+1):
+            features.append(np.double(np.double(num)**dim))
 
-ourModel = model.SigmoidModel(1, featurePtr, 10) 
+
+    return np.array(features).astype(np.double)
+
+ourModel = model.SigmoidModel(27, featurePtr, (9*dimWanted)+1)
 # cropping color image to the same 512x512 crop as in colorize
 colorImage = (colorize.imageToArray("colorImage.jfif"))[500:500+512,900:900+512,:]
 cWidth, cLength, cDepth = np.shape(colorImage)
@@ -27,7 +32,7 @@ if yesNo ==0:
     #atexit.register(model.Model.writeWeightsToFile, ourModel)
     ourModel.loadWeightsFromFile()
     # starting alpha with 0.001
-    ourModel.trainModel(bwImage[:,:int(bwLength/2)],colorImage[:,:int(cLength/2),:],0.01, 0.000001, 0.000001)
+    ourModel.trainModel(bwImage[:,:int(bwLength/2)],colorImage[:,:int(cLength/2),:],1, 1, 1)
 else:
     # output image and compute loss
     ourModel.loadWeightsFromFile()

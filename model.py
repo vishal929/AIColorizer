@@ -43,11 +43,14 @@ class Model():
     #alpha stepsize
     #assumes blackWhiteTraining and colorTraining are numpy arrays
     # alpha, beta, and delta are our learning rates for our 3 separate models
-    def trainModel(self,blackWhiteTraining,colorTraining, alpha, beta, delta):
+    def trainModel(self,simpleTraining,actualTraining, alpha, beta, delta):
+        blackWhiteTraining = np.copy((simpleTraining.astype(np.double)))/2500
+        colorTraining = np.copy((actualTraining.astype(np.double)))/255
         #scaling data down
         #should divide each entry in array by the value (should divide all r,g, and b for colorTraining)
-        blackWhiteTraining /= 2500.0 #as in old features thing
-        colorTraining /= 255.0
+        #blackWhiteTraining /= 2500.0 #as in old features thing
+        #print(blackWhiteTraining)
+        #colorTraining /= 255.0
         
         #if the weights list is empty, initialize random small weights
         alpha = np.double(alpha)
@@ -55,10 +58,13 @@ class Model():
         delta = np.double(delta)
         if len(self.redWeights) < 1:
             self.redWeights = np.random.rand(self.featureDim).astype(np.double)
+            #self.redWeights = np.array([np.double(-3) for i in range(self.featureDim)]).astype(np.double)
         if len(self.greenWeights)<1:
             self.greenWeights = np.random.rand(self.featureDim).astype(np.double)
+            #self.greenWeights = np.array([np.double(-3) for i in range(self.featureDim)]).astype(np.double)
         if len(self.blueWeights)<1:
             self.blueWeights = np.random.rand(self.featureDim).astype(np.double)
+            #self.blueWeights = np.array([np.double(-3) for i in range(self.featureDim)]).astype(np.double)
             #self.redWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
             #self.greenWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
             #self.blueWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
@@ -70,9 +76,9 @@ class Model():
             #print("STARTING BLUE: "+str(self.blueWeights))
 
         # every 1000 iterations, we will calculate the loss of our training data and stop if we are satisfied
-        threshold=1000
+        threshold=100000
         iterCount=0
-        learningRateDecay = np.double(0.9999)
+        learningRateDecay = np.double(1)
 
         #initial loss
         lastLoss = self.trainingLoss(blackWhiteTraining,colorTraining)
@@ -283,7 +289,7 @@ class SigmoidModel(Model):
     def sigmoid(self,z):
         res= np.double(1.) / (np.double(1.) + np.double(np.exp(-z)))
         #print("SIGMOID RESULT:" + str(res)+ " with input: "+str(z))
-        return res
+        return np.double(res)
 
     def evaluateModel(self, patch):
         #return r,g,b value model gets at patch
@@ -309,8 +315,10 @@ class SigmoidModel(Model):
         greenLoss = 0
         blueLoss = 0
         for row in range(trainingWidth):
+            if row==0 or row==trainingWidth-1:
+                continue
             for col in range(trainingLength):
-                if row == 0 or row == trainingWidth - 1 or col == 0 or col == trainingLength - 1:
+                if col == 0 or col == trainingLength - 1:
                     continue
 
                 # this is a valid patch, we first compute the model rgb value
