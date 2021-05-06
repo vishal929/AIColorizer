@@ -7,8 +7,28 @@ import atexit
 import math
 import signal
 
+
+# PATCH IS ASSUMING THE FOLLOWING FORMAT FOR EACH PATCH (CONSISTENT WITH COLORIZE.py format):
+    '''
+    [
+    blackWhiteTraining[z - 1, y - 1],
+    blackWhiteTraining[z, y - 1],
+    blackWhiteTraining[z + 1, y - 1],
+    blackWhiteTraining[z - 1, y],
+    blackWhiteTraining[z, y],
+    blackWhiteTraining[z + 1, y],
+    blackWhiteTraining[z - 1, y + 1],
+    blackWhiteTraining[z, y + 1],
+    blackWhiteTraining[z + 1, y + 1]]
+    '''
+
+
 class Model():
     
+    '''
+    This class is an abstract class for a Model. From here we could specify different models and loss functions
+    Features are passed in as a pointer. It is the caller's responsibility to make sure featurePtr and featureDim match. If they don't then there won't be the correct number of weights.
+    '''
     def __init__(self, id, featurePtr, featureDim):
         # standard featureDim is 10 --> (1,x_1,x_2,x_3,x_4,x_5,x_6,x_7,x_8,x_9)
         self.features = featurePtr
@@ -18,12 +38,6 @@ class Model():
         self.blueWeights=[]
         self.id = id
 
-    '''
-    #for now this is equivalent to saying there are no features
-    def features(self,patch):
-        np.append(patch,1)
-        return patch
-    '''
 
     #return r,g,b value model gets at patch
     def evaluateModel(self, patch):
@@ -36,21 +50,14 @@ class Model():
     def loss_gradient(self, patch, actualrgb):
         pass
 
-    '''have to standardize what the shape of weights arrays are, I think its (featureDim,)
-        also don't know if weights arrays have to numpy arrays for everything below to work'''
-    #by stochastic gradient descent
-    #would do red, green, blue
-    #alpha stepsize
-    #assumes blackWhiteTraining and colorTraining are numpy arrays
+    # by stochastic gradient descent
+    # trains the red, green, and blue models
+    # assumes blackWhiteTraining and colorTraining are numpy arrays
     # alpha, beta, and delta are our learning rates for our 3 separate models
     def trainModel(self,simpleTraining,actualTraining, alpha, beta, delta):
+        #scaling data down
         blackWhiteTraining = np.copy((simpleTraining.astype(np.double)))/2500
         colorTraining = np.copy((actualTraining.astype(np.double)))/255
-        #scaling data down
-        #should divide each entry in array by the value (should divide all r,g, and b for colorTraining)
-        #blackWhiteTraining /= 2500.0 #as in old features thing
-        #print(blackWhiteTraining)
-        #colorTraining /= 255.0
         
         #if the weights list is empty, initialize random small weights
         alpha = np.double(alpha)
@@ -58,22 +65,10 @@ class Model():
         delta = np.double(delta)
         if len(self.redWeights) < 1:
             self.redWeights = np.random.rand(self.featureDim).astype(np.double)
-            #self.redWeights = np.array([np.double(-3) for i in range(self.featureDim)]).astype(np.double)
         if len(self.greenWeights)<1:
             self.greenWeights = np.random.rand(self.featureDim).astype(np.double)
-            #self.greenWeights = np.array([np.double(-3) for i in range(self.featureDim)]).astype(np.double)
         if len(self.blueWeights)<1:
             self.blueWeights = np.random.rand(self.featureDim).astype(np.double)
-            #self.blueWeights = np.array([np.double(-3) for i in range(self.featureDim)]).astype(np.double)
-            #self.redWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
-            #self.greenWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
-            #self.blueWeights = np.array([np.double(0.000000001) for i in range(self.featureDim)])
-            #self.redWeights = np.array([0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001]).astype(np.double)
-            #self.greenWeights = np.array([0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001]).astype(np.double)
-            #self.blueWeights = np.array([0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001]).astype(np.double)
-            #print("STARTING RED: "+str(self.redWeights))
-            #print("STARTING GREEN: "+str(self.greenWeights))
-            #print("STARTING BLUE: "+str(self.blueWeights))
 
         # every 1000 iterations, we will calculate the loss of our training data and stop if we are satisfied
         threshold=100000
@@ -103,23 +98,14 @@ class Model():
                 blackWhiteTraining[row][col + 1],
                 blackWhiteTraining[row + 1][col + 1]])
 
-            # (Soumya: I just realized we don't need the value for the loss gradient if we plug x and y into the loss function we have)
-             #the rgb value the model predicts, corresponds to f(x)
+            #the rgb value the model predicts, corresponds to f(x)
             actual_rgb = colorTraining[row][col] #the rgb value from the data, corresponds to y
-            #print("x"+str(x))
-            #print("red: "+str(self.redWeights))
-            #print(np.dot(self.redWeights,self.features(x)))
-            #print(np.dot(self.greenWeights,self.features(x)))
 
             # update w_{t+1}=w_t - alpha (GRADIENT(LOSS_i))(w_t)
             grad = self.loss_gradient(x, actual_rgb)
-            #print("GRADIENT: "+str(grad))
             redModifier = alpha * grad[0]
             greenModifier = beta * grad[1]
             blueModifier = delta * grad[2]
-            #print("RED MODIFIER: "+str(redModifier))
-            #print("GREEN MODIFIER: "+str(greenModifier))
-            #print("BLUE MODIFIER: "+str(blueModifier))
             self.redWeights = old_redWeights - (alpha * grad[0])
             self.greenWeights = old_greenWeights - (beta * grad[1])
             self.blueWeights = old_blueWeights - (delta * grad[2])
@@ -170,10 +156,6 @@ class Model():
 
                 # resetting iterCount
                 iterCount=0
-            #check for keyword "stop" from user, if this happens then call writetofile
-            '''looking to atexit.register() to write data when press ctrl-c, the only issue is it needs a function that does not have arguments
-                if loadWeightsFromFile were changed so that it just writes to a set file, then it would work
-                the issue with checking for stop is that the program would have to prompt user every x iterations or so about whether they want to stop'''
             
             #check for convergence with the old weights - stop if change in weights < 0.1 (experiment with the number 0.1)
             '''
@@ -267,20 +249,6 @@ class Model():
 
         file.close()
 
-
-# PATCH IS ASSUMING THE FOLLOWING FORMAT FOR EACH PATCH (CONSISTENT WITH COLORIZE.py format):
-    '''
-    [
-    blackWhiteTraining[z - 1, y - 1],
-    blackWhiteTraining[z, y - 1],
-    blackWhiteTraining[z + 1, y - 1],
-    blackWhiteTraining[z - 1, y],
-    blackWhiteTraining[z, y],
-    blackWhiteTraining[z + 1, y],
-    blackWhiteTraining[z - 1, y + 1],
-    blackWhiteTraining[z, y + 1],
-    blackWhiteTraining[z + 1, y + 1]]
-    '''
 class SigmoidModel(Model):
 
     def __init__(self, id, featurePtr, featureDim):
@@ -288,13 +256,12 @@ class SigmoidModel(Model):
 
     def sigmoid(self,z):
         res= np.double(1.) / (np.double(1.) + np.double(np.exp(-z)))
-        #print("SIGMOID RESULT:" + str(res)+ " with input: "+str(z))
         return np.double(res)
 
     def evaluateModel(self, patch):
         #return r,g,b value model gets at patch
         # sigmoid function is:  sigmoid(z) = 1/(1+e^{-z})
-        phi = self.features(patch) #should probably return a numpy array
+        phi = self.features(patch)
         red_dot = np.dot(self.redWeights, phi)
         green_dot = np.dot(self.greenWeights, phi)
         blue_dot = np.dot(self.blueWeights, phi)
@@ -331,13 +298,6 @@ class SigmoidModel(Model):
                          blackWhiteTraining[row - 1, col + 1],
                          blackWhiteTraining[row, col + 1],
                          blackWhiteTraining[row + 1, col + 1]]
-                '''
-                phi = self.features(patch)
-                # getting the pixel value
-                modelR= self.sigmoid(np.dot(self.redWeights,phi))
-                modelG = self.sigmoid(np.dot(self.greenWeights, phi))
-                modelB = self.sigmoid(np.dot(self.blueWeights, phi))
-                '''
                 modelR, modelG, modelB = self.evaluateModel(patch)
                 redLoss += (modelR - colorImageTraining[row, col, 0]) **2
                 greenLoss += (modelG - colorImageTraining[row, col ,1]) **2
@@ -346,85 +306,15 @@ class SigmoidModel(Model):
         return (redLoss,greenLoss,blueLoss)
 
     #evaluate gradient of the loss at vector x for red, green, and blue
-        # phi is the feature included data vector - Soumya: we already have the self.features(patch)
     def loss_gradient(self, patch, actualrgb):
         # 510 (255 sigma(w dot features(patch)) - actualrgb[c]) sigma(w dot features(patch))(1 - sigma(w dot features(patch)))
-        #modelR, modelG, modelB = modelrgb #Soumya: each is R(x), G(x), and B(x) resp, but loss is in terms of x and y
         actualR, actualG, actualB = actualrgb
         red_sigmoid, green_sigmoid, blue_sigmoid = self.evaluateModel(patch)
         phi = self.features(patch)
-        '''
-        #print("PATCH: "+str(patch))
-        #print("PHI: "+str(phi))
-
-        #each sigmoid term is sigma(w dot features(patch))
-        red_sigmoid = self.sigmoid(np.dot(self.redWeights, phi))
-        green_sigmoid = self.sigmoid(np.dot(self.redWeights, phi))
-        blue_sigmoid = self.sigmoid(np.dot(self.redWeights, phi))
-        '''
-
-        #print("RED SIGMOID: "+str(red_sigmoid))
-        #print("GREEN SIGMOID: "+str(green_sigmoid))
-        #print("BLUE SIGMOID: "+str(blue_sigmoid))
-
-        #print("MODEL RED: "+str(255*red_sigmoid))
-        #print("MODEL GREEN: "+str(255*green_sigmoid))
-        #print("MODEL BLUE: "+str(255*blue_sigmoid))
 
         redGradient = 2 * ( red_sigmoid - actualR) * red_sigmoid * (1-red_sigmoid) * phi
         greenGradient = 2 * ( green_sigmoid - actualG) * (green_sigmoid * (1-green_sigmoid)) * phi
         blueGradient = 2 * (blue_sigmoid - actualB) * (blue_sigmoid * (1-blue_sigmoid)) * phi
-        #print("RED GRADIENT: "+str(redGradient))
-        #print("green Gradient: "+str(greenGradient))
-        #print("blue gradient: "+str(blueGradient))
 
         return redGradient, greenGradient, blueGradient
-
-    '''
-    # we can hardcode what features we want for now
-    def features(self,patch):
-        patch = np.append(patch,0.1)
-        return patch
-
-        
-        features=[np.double(1)]
-        for value in patch:
-            features.append(np.double(value)/np.double(2500))
-
-        return np.array(features).astype(np.double)
-        
-        # x^2 features
-        phi =[np.double(0.01)]
-        for greyValue in patch:
-            phi.append(np.double(greyValue/1000))
-            phi.append(np.double((greyValue/1000)**2))
-        return np.array(phi).astype(np.double)
-      
-
-        #my idea of the middle component mattering the most, then 1 level out mattering less, last level mattering the least)
-    '''
-
-
-# testing getting weights and writing weights to a file
-'''
-testModel = Model()
-testModel.redWeights = [3.65,4.6,0.003,9.87654]
-testModel.greenWeights = [4.34, 0.0002, 5.453, 7.0003]
-testModel.blueWeights = [7.984, 0.0543, 0.0000003, 0.3]
-
-#testing atexit functionality
-atexit.register(Model.writeWeightsToFile, testModel)
-while True:
-    pass
-
-testModel.writeWeightsToFile("weights.txt")
-
-otherTestModel = Model()
-
-# loading weights into otherTestModel and seeing if they are preserved
-otherTestModel.loadWeightsFromFile("weights.txt")
-print(otherTestModel.redWeights)
-print(otherTestModel.greenWeights)
-print(otherTestModel.blueWeights)
-'''
 

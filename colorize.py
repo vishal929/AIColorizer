@@ -1,4 +1,7 @@
-# I tried to keep same format as the picture you sent
+'''
+This file includes image processing tools and the KNN Basic Agent functionality
+'''
+
 
 # WE ARE USING SCIKIT ONLY FOR IMAGE REPRESENTATION HERE! NO BUILT IN METHODS ARE USED IN OUR IMPLEMENTATION
 import time
@@ -65,8 +68,6 @@ def kmeans(colorImage,numMeans):
             closestMeanCost = None
             for z in range(len(means)):
                 # by "closest" we take (r_1-r_2)^2 + (g_1-g_2)^2 + (b_1-b_2)^2 and minimize this
-                #print(colorLeftHalf[i,j])
-                #print(means[z][0])
                 cost = ((int(colorLeftHalf[i, j, 0]) - int(means[z][0][0])) ** 2) + \
                        ((int(colorLeftHalf[i, j, 1]) - int(means[z][0][1])) ** 2) + \
                        ((int(colorLeftHalf[i, j, 2]) - int(means[z][0][2])) ** 2)
@@ -164,20 +165,8 @@ def kmeans(colorImage,numMeans):
     print("FINISHED RECOLORING IMAGE")
     return colorLeftHalf
 
-'''in the middle of making a separate method out of picking the closest patches, 
-one thing needed is the right image parameters'''
-#returns the six closest patches in training to a test patch
+#returns the six closest patches in training to a test patch (form of this is [(distanceValue, (rgb)) , ...])
 def sixClosestPatches(i,j,patches,blackWhiteTest):
-    '''
-    sixClosest = []
-    #there might be a numpy method(s) for doing what is in the distance sum
-        #for instance, get a numpy array from subtracting 2 patches (also numpy arrays), then dot that numpy array with itself
-    '''
-
-
-    # if we reached here, we have a valid 3x3 patch
-    # now we need to go to the training data and find the 6 closest 3x3 patches
-        # form of this is [(distanceValue, (rgb)) , ...]
     sixClosest = []
     for patch in patches:
         # calculating the distance value between patches
@@ -326,16 +315,6 @@ def thread_knn(i,j,patches,blackWhiteTest,resultData):
     resultData[i, j, 2] = bestColor[2]
     print("colored pixel "+ str(i)+", "+str(j))
 
-
-# trains a model
-def trainModel(image,model):
-    pass
-
-# outputs a color version of a black and white image based on a model
-def improved(image,model):
-    pass
-
-
 #test
 def test():
     colorImage = imageToArray("colorImage.jfif")
@@ -361,8 +340,3 @@ def test():
     print("KNN TOOK "+str(t6-t5))
 
     arrayToImage(outputBasicAgent,"basicAgentOutput.jfif")
-
-'''
-I think it would be more modular if the reading in images was done here, or in a main/test method, and then the methods above used the resulting numpy arrays
-Then the methods could return numpy arrays, and down here could save files or compare with the true right half to see how well it did.
-'''

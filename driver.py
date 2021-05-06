@@ -6,16 +6,13 @@ import numpy as np
 import model
 import colorize
 
-# setup for training/evaluation
-dimWanted=20
 #can specify different features for different models, driver.py's responsibility to make sure dim matches
+dimWanted=30
 def featurePtr(patch):
     features=[np.double(0.1)]
     for num in patch:
         for dim in range(1,dimWanted+1):
             features.append(np.double(np.double(num)**dim))
-
-
     return np.array(features).astype(np.double)
 
 ourModel = model.SigmoidModel(27, featurePtr, (9*dimWanted)+1)
@@ -25,13 +22,10 @@ cWidth, cLength, cDepth = np.shape(colorImage)
 bwImage = colorize.bwImage(colorImage)
 bwWidth, bwLength = np.shape(bwImage)
 
-# asking user what they wish to do
 yesNo = int(input("Please enter 0 if you want to train the model and 1 if you want to test the output and compute the loss!"))
 if yesNo ==0:
     # train
-    #atexit.register(model.Model.writeWeightsToFile, ourModel)
     ourModel.loadWeightsFromFile()
-    # starting alpha with 0.001
     ourModel.trainModel(bwImage[:,:int(bwLength/2)],colorImage[:,:int(cLength/2),:],1, 1, 1)
 else:
     # output image and compute loss
