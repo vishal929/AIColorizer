@@ -1,4 +1,3 @@
-# just a file to organize our improved model thoughts
 import sys
 
 import numpy as np
