@@ -15,7 +15,7 @@ def featurePtr(patch):
             features.append(np.double(np.double(num)**dim))
     return np.array(features).astype(np.double)
 
-ourModel = model.SigmoidModel(27, featurePtr, (9*dimWanted)+1)
+ourModel = model.SigmoidModel(30, featurePtr, (9*dimWanted)+1)
 # cropping color image to the same 512x512 crop as in colorize
 colorImage = (colorize.imageToArray("colorImage.jfif"))[500:500+512,900:900+512,:]
 cWidth, cLength, cDepth = np.shape(colorImage)
@@ -26,7 +26,7 @@ yesNo = int(input("Please enter 0 if you want to train the model and 1 if you wa
 if yesNo ==0:
     # train
     ourModel.loadWeightsFromFile()
-    ourModel.trainModel(bwImage[:,:int(bwLength/2)],colorImage[:,:int(cLength/2),:],1, 1, 1)
+    ourModel.trainModel(bwImage[:,:int(bwLength/2)],colorImage[:,:int(cLength/2),:],3, 3, 10)
 else:
     # output image and compute loss
     ourModel.loadWeightsFromFile()
